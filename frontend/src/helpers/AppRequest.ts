@@ -16,6 +16,20 @@ class AppRequest {
       ? import.meta.env.VITE_API_URL_PROD
       : import.meta.env.VITE_API_URL_DEV;
 
+    // Validate that baseURL is defined
+    if (!baseURL) {
+      console.error("⚠️ API Base URL is not defined!");
+      console.error("Environment:", import.meta.env.MODE);
+      console.error("PROD:", import.meta.env.PROD);
+      console.error("Available env vars:", import.meta.env);
+      throw new Error(
+        "API Base URL is not configured. Please set VITE_API_URL_DEV or VITE_API_URL_PROD in your environment variables.",
+      );
+    }
+
+    console.log("✅ API Base URL:", baseURL);
+    console.log("🌍 Environment:", import.meta.env.MODE);
+
     this.api = axios.create({
       baseURL: baseURL,
       timeout: 30000,
