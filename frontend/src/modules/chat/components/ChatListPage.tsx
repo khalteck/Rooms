@@ -20,7 +20,7 @@ export function ChatListPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredRooms = rooms.filter((room) =>
-    room.name.toLowerCase().includes(searchQuery.toLowerCase())
+    room.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   if (!currentUser) {
@@ -42,13 +42,19 @@ export function ChatListPage() {
         >
           <div className="flex items-center gap-4">
             <Avatar className="w-12 h-12 border-2 border-primary/20">
-              <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
-              <AvatarFallback>{currentUser.name[0]}</AvatarFallback>
+              <AvatarImage
+                src={currentUser?.avatar}
+                alt={`${currentUser?.firstName} ${currentUser?.lastName}`}
+              />
+              <AvatarFallback>
+                {currentUser?.firstName?.[0]}
+                {currentUser?.lastName?.[0]}
+              </AvatarFallback>
             </Avatar>
             <div>
               <h1 className="text-2xl">Rooms</h1>
               <p className="text-sm text-muted-foreground">
-                {currentUser.username}
+                {currentUser.firstName} {currentUser.lastName}
               </p>
             </div>
           </div>

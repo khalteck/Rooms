@@ -8,27 +8,49 @@ import { Label } from "../../../components/ui/label";
 import { AnimatedBackground } from "../../../components/AnimatedBackground";
 import { useAuthStore } from "../../../store";
 import { toast } from "sonner";
+import { useAppPost } from "../../../hooks/useAppRequest";
 
 export function SignupPage() {
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    username: "",
+    email: "",
+    password: "",
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const { mutateAsync: register, isPending } = useAppPost("/auth/register");
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement actual signup API call
-    const mockUser = {
-      id: "1",
-      name,
-      username: "@" + name.toLowerCase().replace(/\s+/g, ""),
-      avatar:
-        "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop",
-      status: "online" as const,
-    };
-    login(mockUser, "mock-token");
-    toast.success("Account created successfully");
+
+    if (isPending) return;
+
+    if (
+      !formData.firstName ||
+      !formData.lastName ||
+      !formData.username ||
+      !formData.email ||
+      !formData.password
+    ) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    const res = await register({
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      username: formData.username,
+      email: formData.email,
+      password: formData.password,
+    });
+
+    console.log("register response", res);
+
+    toast.success(`Welcome to Rooms, ${res.user.firstName}! 👋`);
+    login(res.user, res.token);
     navigate("/app/onboarding");
   };
 
@@ -63,16 +85,50 @@ export function SignupPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input
+                    id="firstName"
+                    type="text"
+                    placeholder="John"
+                    value={formData.firstName}
+                    onChange={(e) =>
+                      setFormData({ ...formData, firstName: e.target.value })
+                    }
+                    className="bg-input border-border"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input
+                    id="lastName"
+                    type="text"
+                    placeholder="Doe"
+                    value={formData.lastName}
+                    onChange={(e) =>
+                      setFormData({ ...formData, lastName: e.target.value })
+                    }
+                    className="bg-input border-border"
+                    required
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="username">Username</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <Input
-                    id="name"
+                    id="username"
                     type="text"
-                    placeholder="Alex Morgan"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Your username"
+                    value={formData.username}
+                    onChange={(e) =>
+                      setFormData({ ...formData, username: e.target.value })
+                    }
                     className="pl-10 bg-input border-border"
                     required
                   />
@@ -87,8 +143,10 @@ export function SignupPage() {
                     id="email"
                     type="email"
                     placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    value={formData.email}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
                     className="pl-10 bg-input border-border"
                     required
                   />
@@ -103,8 +161,10 @@ export function SignupPage() {
                     id="password"
                     type="password"
                     placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    value={formData.password}
+                    onChange={(e) =>
+                      setFormData({ ...formData, password: e.target.value })
+                    }
                     className="pl-10 bg-input border-border"
                     required
                   />
@@ -114,8 +174,9 @@ export function SignupPage() {
               <Button
                 type="submit"
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                disabled={isPending}
               >
-                Create Account
+                {isPending ? "Creating Account..." : "Create Account"}
               </Button>
             </form>
 

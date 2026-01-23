@@ -19,10 +19,10 @@ const generateToken = (user) => {
 //================================================================
 
 exports.register = asyncHandler(async (req, res) => {
-  const { username, email, password } = req?.body;
+  const { firstName, lastName, username, email, password } = req?.body;
 
   // Validation
-  if (!username || !email || !password) {
+  if (!firstName || !lastName || !username || !email || !password) {
     throw new ApiError(
       400,
       "All fields are required",
@@ -66,6 +66,8 @@ exports.register = asyncHandler(async (req, res) => {
   const hashedPassword = await bcrypt.hash(password, salt);
 
   const newUser = await User.create({
+    firstName,
+    lastName,
     username,
     email,
     password: hashedPassword,

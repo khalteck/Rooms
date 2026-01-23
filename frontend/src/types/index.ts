@@ -1,9 +1,13 @@
 export interface User {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
+  email: string;
   username: string;
-  avatar: string;
-  status: 'online' | 'offline' | 'away';
+  avatar?: string;
+  status?: "online" | "offline" | "away";
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Message {
@@ -24,4 +28,12 @@ export interface Room {
   createdAt: Date;
 }
 
-export type Page = 'landing' | 'login' | 'signup' | 'onboarding' | 'chatlist' | 'conversation' | 'notifications' | 'settings';
+export type Page =
+  | "landing"
+  | "login"
+  | "signup"
+  | "onboarding"
+  | "chatlist"
+  | "conversation"
+  | "notifications"
+  | "settings";

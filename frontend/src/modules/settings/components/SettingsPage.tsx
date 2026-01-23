@@ -31,17 +31,18 @@ export function SettingsPage() {
   const currentUser = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const notificationsEnabled = useSettingsStore(
-    (state) => state.notificationsEnabled
+    (state) => state.notificationsEnabled,
   );
   const setNotificationsEnabled = useSettingsStore(
-    (state) => state.setNotificationsEnabled
+    (state) => state.setNotificationsEnabled,
   );
   const soundEnabled = useSettingsStore((state) => state.soundEnabled);
   const setSoundEnabled = useSettingsStore((state) => state.setSoundEnabled);
 
-  const [name, setName] = useState(currentUser?.name || "");
+  const [firstName, setFirstName] = useState(currentUser?.firstName || "");
+  const [lastName, setLastName] = useState(currentUser?.lastName || "");
   const [username, setUsername] = useState(currentUser?.username || "");
-  const [email, setEmail] = useState("alex@example.com");
+  const [email, setEmail] = useState(currentUser?.email || "");
 
   if (!currentUser) {
     navigate("/login");
@@ -60,11 +61,18 @@ export function SettingsPage() {
       icon: User,
       items: [
         {
-          id: "name",
-          label: "Name",
+          id: "firstName",
+          label: "First Name",
           type: "input",
-          value: name,
-          onChange: setName,
+          value: firstName,
+          onChange: setFirstName,
+        },
+        {
+          id: "lastName",
+          label: "Last Name",
+          type: "input",
+          value: lastName,
+          onChange: setLastName,
         },
         {
           id: "username",
@@ -153,15 +161,23 @@ export function SettingsPage() {
           <div className="flex items-center gap-6">
             <div className="relative group">
               <Avatar className="w-24 h-24 border-4 border-primary/20">
-                <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
-                <AvatarFallback>{currentUser.name[0]}</AvatarFallback>
+                <AvatarImage
+                  src={currentUser.avatar}
+                  alt={`${currentUser.firstName} ${currentUser.lastName}`}
+                />
+                <AvatarFallback>
+                  {currentUser.firstName?.[0]}
+                  {currentUser.lastName?.[0]}
+                </AvatarFallback>
               </Avatar>
               <button className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <Camera className="w-8 h-8 text-white" />
               </button>
             </div>
             <div>
-              <h2 className="text-xl mb-1">{currentUser.name}</h2>
+              <h2 className="text-xl mb-1">
+                {currentUser.firstName} {currentUser.lastName}
+              </h2>
               <p className="text-muted-foreground">{currentUser.username}</p>
               <Button
                 variant="outline"
@@ -217,7 +233,7 @@ export function SettingsPage() {
                       value={item.value as string}
                       onChange={(e) =>
                         (item.onChange as (value: string) => void)(
-                          e.target.value
+                          e.target.value,
                         )
                       }
                       className="max-w-xs bg-background border-border"

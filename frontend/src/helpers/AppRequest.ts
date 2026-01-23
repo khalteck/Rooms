@@ -11,8 +11,13 @@ class AppRequest {
   private api: AxiosInstance;
 
   constructor() {
+    // create baseurl based on environment
+    const baseURL = import.meta.env.PROD
+      ? import.meta.env.VITE_API_URL_PROD
+      : import.meta.env.VITE_API_URL_DEV;
+
     this.api = axios.create({
-      baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000/api",
+      baseURL: baseURL,
       timeout: 30000,
       headers: {
         "Content-Type": "application/json",
@@ -37,7 +42,7 @@ class AppRequest {
       },
       (error) => {
         return Promise.reject(error);
-      }
+      },
     );
 
     // Response interceptor
@@ -46,7 +51,7 @@ class AppRequest {
       (error: AxiosError) => {
         this.handleError(error);
         return Promise.reject(error);
-      }
+      },
     );
   }
 
@@ -110,7 +115,7 @@ class AppRequest {
   async post<T = any>(
     url: string,
     data?: any,
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<T> {
     try {
       const response = await this.api.post<T>(url, data, config);
@@ -129,7 +134,7 @@ class AppRequest {
   async put<T = any>(
     url: string,
     data?: any,
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<T> {
     try {
       const response = await this.api.put<T>(url, data, config);
@@ -148,7 +153,7 @@ class AppRequest {
   async patch<T = any>(
     url: string,
     data?: any,
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<T> {
     try {
       const response = await this.api.patch<T>(url, data, config);

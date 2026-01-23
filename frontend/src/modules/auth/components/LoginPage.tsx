@@ -8,27 +8,35 @@ import { Label } from "../../../components/ui/label";
 import { AnimatedBackground } from "../../../components/AnimatedBackground";
 import { useAuthStore } from "../../../store";
 import { toast } from "sonner";
+import { useAppPost } from "../../../hooks/useAppRequest";
 
 export function LoginPage() {
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const { mutateAsync: loginUser, isPending } = useAppPost("/auth/login");
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement actual login API call
-    const mockUser = {
-      id: "1",
-      name: "Alex Morgan",
-      username: "@alexmorgan",
-      avatar:
-        "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop",
-      status: "online" as const,
-    };
-    login(mockUser, "mock-token");
-    toast.success("Logged in successfully");
-    navigate("/app/onboarding");
+    if (isPending) return;
+
+    if (!formData.email || !formData.password) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    const res = await loginUser({
+      email: formData.email,
+      password: formData.password,
+    });
+
+    toast.success(`Welcome back, ${res.user.firstName}! 👋`);
+    login(res.user, res.token);
+    navigate("/app/chats");
   };
 
   return (
@@ -70,8 +78,10 @@ export function LoginPage() {
                     id="email"
                     type="email"
                     placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    value={formData.email}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
                     className="pl-10 bg-input border-border"
                     required
                   />
@@ -86,8 +96,10 @@ export function LoginPage() {
                     id="password"
                     type="password"
                     placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    value={formData.password}
+                    onChange={(e) =>
+                      setFormData({ ...formData, password: e.target.value })
+                    }
                     className="pl-10 bg-input border-border"
                     required
                   />
@@ -97,8 +109,9 @@ export function LoginPage() {
               <Button
                 type="submit"
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                disabled={isPending}
               >
-                Sign In
+                {isPending ? "Logging in..." : "Log In"}
               </Button>
             </form>
 
