@@ -35,7 +35,7 @@ export function RoomBackground({
 
           {/* User avatar representation */}
           <motion.div
-            className="absolute bottom-10 left-1/2 -translate-x-1/2"
+            className="absolute bottom-10 left-3 md:left-1/2 md:-translate-x-1/2"
             animate={{
               y: [0, -10, 0],
               scale: [1, 1.05, 1],

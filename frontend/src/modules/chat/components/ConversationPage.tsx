@@ -10,6 +10,7 @@ import {
   AvatarImage,
 } from "../../../components/ui/avatar";
 import { RoomBackground } from "./RoomBackground";
+import { BackgroundDecor } from "./BackgroundDecor";
 import { rooms, messages as initialMessages } from "../../../mockData";
 import { useAuthStore } from "../../../store";
 import { Message } from "../../../types";
@@ -64,7 +65,7 @@ export function ConversationPage() {
   if (!room || !otherUser || !currentUser) return null;
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background">
+    <div className="relative min-h-[100dvh] overflow-hidden bg-background">
       {/* Door Opening Animation Overlay */}
       <AnimatePresence>
         {isEntering && (
@@ -117,6 +118,9 @@ export function ConversationPage() {
 
       {/* Bird's Eye View Background */}
       <RoomBackground currentUser={currentUser} otherUser={otherUser} />
+
+      {/* Decorative Background Elements */}
+      <BackgroundDecor />
 
       {/* Chat Interface */}
       <div className="relative z-10 flex flex-col h-screen">
@@ -178,7 +182,7 @@ export function ConversationPage() {
         </motion.div>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto px-4 py-6">
+        <div className="flex-1 overflow-y-auto px-4 pt-6 pb-12">
           <div className="max-w-4xl mx-auto space-y-4">
             {messages.map((message, index) => (
               <motion.div
@@ -193,7 +197,7 @@ export function ConversationPage() {
                 }`}
               >
                 <div
-                  className={`max-w-[70%] rounded-2xl px-4 py-3 ${
+                  className={`max-w-[70%] rounded-2xl px-4 py-3  backdrop-blur-lg opacity-70 ${
                     message.senderId === currentUser.id
                       ? "bg-primary text-primary-foreground rounded-br-sm"
                       : "bg-card border border-border rounded-bl-sm"

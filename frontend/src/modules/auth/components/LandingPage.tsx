@@ -33,7 +33,7 @@ export function LandingPage() {
     <div className="relative min-h-screen overflow-hidden">
       <AnimatedBackground />
 
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4">
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen pt-[100px] pb-14 px-4">
         {/* Hero Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -79,7 +79,7 @@ export function LandingPage() {
               onClick={() => navigate("/login")}
               size="lg"
               variant="outline"
-              className="border-border hover:bg-card px-8"
+              className="border-border hover:bg-card hover:text-white px-8"
             >
               Sign In
             </Button>
@@ -109,6 +109,10 @@ export function LandingPage() {
             </motion.div>
           ))}
         </motion.div>
+      </div>
+
+      <div className="text-xs text-muted-foreground pb-5 text-center">
+        © {new Date().getFullYear()} Khalteck
       </div>
     </div>
   );
