@@ -2,7 +2,6 @@ const express = require("express");
 const morgan = require("morgan");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const blogRoutes = require("./routes/blogRoutes");
 const authRoutes = require("./routes/authRoutes");
 const { errorHandler, notFound } = require("./middleware/errorHandler");
 require("dotenv").config();
@@ -31,9 +30,6 @@ const apiV1 = express.Router();
 apiV1.get("/", (req, res) => {
   res.json({ message: "Welcome to the Rooms API", version: "1.0.0" });
 });
-
-// blog routes
-apiV1.use("/blogs", blogRoutes);
 
 // auth routes
 apiV1.use("/auth", authRoutes);

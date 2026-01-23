@@ -14,7 +14,10 @@ const generateToken = (user) => {
   });
 };
 
+//================================================================
 // Register a new user
+//================================================================
+
 exports.register = asyncHandler(async (req, res) => {
   const { username, email, password } = req?.body;
 
@@ -77,7 +80,10 @@ exports.register = asyncHandler(async (req, res) => {
   });
 });
 
-// Login a user
+//================================================================
+// Login user
+//================================================================
+
 exports.login = asyncHandler(async (req, res) => {
   const { email, password } = req?.body || {};
 
@@ -112,7 +118,10 @@ exports.login = asyncHandler(async (req, res) => {
   });
 });
 
+//================================================================
 // Forgot password
+//================================================================
+
 exports.forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req?.body || {};
 
@@ -135,7 +144,10 @@ exports.forgotPassword = asyncHandler(async (req, res) => {
   });
 });
 
+//================================================================
 // Reset password
+//================================================================
+
 exports.resetPassword = asyncHandler(async (req, res) => {
   const { email, newPassword } = req?.body || {};
 
