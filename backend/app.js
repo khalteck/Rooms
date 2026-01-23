@@ -27,8 +27,8 @@ app.use(morgan("dev"));
 // API v1 routes
 const apiV1 = express.Router();
 
-apiV1.get("/", (req, res) => {
-  res.json({ message: "Welcome to the Rooms API", version: "1.0.0" });
+app.get("/", (req, res) => {
+  res.json({ message: "Welcome to Rooms API", version: "1.0.0" });
 });
 
 // auth routes
