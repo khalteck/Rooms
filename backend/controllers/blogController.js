@@ -1,65 +1,50 @@
 const Blog = require("../models/blogs");
+const asyncHandler = require("../helpers/asyncHandler");
+const ApiError = require("../helpers/ApiError");
 
 // blogs index list controller
-const blog_index = (req, res) => {
-  Blog.find()
-    .sort({ createdAt: -1 })
-    .then((result) => {
-      res.json({ blogs: result });
-    })
-    .catch((err) => {
-      console.log(err);
-      res.status(500).json({ error: "Failed to fetch blogs" });
-    });
-};
+const blog_index = asyncHandler(async (req, res) => {
+  const blogs = await Blog.find().sort({ createdAt: -1 });
+  res.json({ blogs });
+});
 
-//blog details contoller
-const blog_details = (req, res) => {
-  const id = req.params.id;
-  Blog.findById(id)
-    .then((result) => {
-      if (!result) {
-        return res.status(404).json({ error: "Blog not found" });
-      }
-      res.json({ blog: result });
-    })
-    .catch((err) => {
-      console.log(err);
-      res.status(404).json({ error: "Blog not found" });
-    });
-};
+// blog details controller
+const blog_details = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const blog = await Blog.findById(id);
+
+  if (!blog) {
+    throw new ApiError(404, "Blog not found");
+  }
+
+  res.json({ blog });
+});
 
 // blog create post controller
-const blog_create_post = (req, res) => {
+const blog_create_post = asyncHandler(async (req, res) => {
   const blog = new Blog(req.body);
-  blog
-    .save()
-    .then((result) => {
-      res
-        .status(201)
-        .json({ message: "Blog created successfully", blog: result });
-    })
-    .catch((err) => {
-      console.log(err);
-      res.status(400).json({ error: "Failed to create blog" });
-    });
-};
+  const savedBlog = await blog.save();
+
+  res.status(201).json({
+    message: "Blog created successfully",
+    blog: savedBlog,
+  });
+});
 
 // blog delete controller
-const blog_delete = (req, res) => {
-  const id = req.params.id;
-  Blog.findByIdAndDelete(id)
-    .then((result) => {
-      if (!result) {
-        return res.status(404).json({ error: "Blog not found" });
-      }
-      res.json({ message: "Blog deleted successfully", deletedBlog: result });
-    })
-    .catch((err) => {
-      console.log(err);
-      res.status(500).json({ error: "Failed to delete blog" });
-    });
-};
+const blog_delete = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const deletedBlog = await Blog.findByIdAndDelete(id);
+
+  if (!deletedBlog) {
+    throw new ApiError(404, "Blog not found");
+  }
+
+  res.json({
+    message: "Blog deleted successfully",
+    deletedBlog,
+  });
+});
 
 module.exports = {
   blog_index,
