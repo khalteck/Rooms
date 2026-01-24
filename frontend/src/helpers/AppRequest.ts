@@ -74,7 +74,7 @@ class AppRequest {
       // Server responded with error status
       const status = error.response.status;
       const message =
-        (error.response.data as any)?.message || "An error occurred";
+        (error.response.data as any)?.details || "An error occurred";
 
       switch (status) {
         case 400:
@@ -82,7 +82,6 @@ class AppRequest {
           break;
         case 401:
           toast.error("Unauthorized", { description: message });
-          // Could trigger logout here
           break;
         case 403:
           toast.error("Forbidden", {
@@ -90,11 +89,13 @@ class AppRequest {
           });
           break;
         case 404:
-          toast.error("Not Found", { description: message });
+          toast.error("Not Found", {
+            description: message || "Resource not found",
+          });
           break;
         case 500:
           toast.error("Internal Server Error", {
-            description: "Please try again later",
+            description: message || "Please try again later",
           });
           break;
         default:
