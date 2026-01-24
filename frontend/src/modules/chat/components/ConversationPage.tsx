@@ -369,7 +369,7 @@ export function ConversationPage() {
         {/* Messages Area */}
         <div
           ref={messagesContainerRef}
-          className="flex-1 overflow-y-auto px-4 pt-6 pb-12"
+          className="flex-1 overflow-y-auto px-4 pt-6 pb-0"
         >
           <div className="max-w-4xl mx-auto space-y-4">
             {isFetchingNextPage && (
