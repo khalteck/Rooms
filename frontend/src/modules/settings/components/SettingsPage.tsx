@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import {
   ArrowLeft,
@@ -11,6 +11,8 @@ import {
   Camera,
   Mail,
   AtSign,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
@@ -23,33 +25,101 @@ import {
   AvatarImage,
 } from "../../../components/ui/avatar";
 import { AppModal } from "../../../components/AppModal";
+import { ChangePasswordModal } from "./ChangePasswordModal";
 import { AnimatedBackground } from "../../../components/AnimatedBackground";
-import { useAuthStore, useSettingsStore } from "../../../store";
+import { useAuthStore } from "../../../store";
 import { toast } from "sonner";
+import { useAppPatch } from "../../../hooks/useAppRequest";
+import { apiRoutes } from "../../../helpers/apiRoutes";
 
 export function SettingsPage() {
   const navigate = useNavigate();
   const currentUser = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
-  const notificationsEnabled = useSettingsStore(
-    (state) => state.notificationsEnabled,
-  );
-  const setNotificationsEnabled = useSettingsStore(
-    (state) => state.setNotificationsEnabled,
-  );
-  const soundEnabled = useSettingsStore((state) => state.soundEnabled);
-  const setSoundEnabled = useSettingsStore((state) => state.setSoundEnabled);
+  const updateUser = useAuthStore((state) => state.updateUser);
 
-  const [firstName, setFirstName] = useState(currentUser?.firstName || "");
-  const [lastName, setLastName] = useState(currentUser?.lastName || "");
-  const [username, setUsername] = useState(currentUser?.username || "");
-  const [email, setEmail] = useState(currentUser?.email || "");
+  const [formData, setFormData] = useState({
+    firstName: currentUser?.firstName || "",
+    lastName: currentUser?.lastName || "",
+    username: currentUser?.username || "",
+    email: currentUser?.email || "",
+  });
+  const [hasChanges, setHasChanges] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+
+  const { mutateAsync: updateProfile, isPending } = useAppPatch(
+    apiRoutes.account.updateAccount,
+  );
+
+  // Check if form data has changed
+  useEffect(() => {
+    if (!currentUser) return;
+    const changed =
+      formData.firstName !== currentUser.firstName ||
+      formData.lastName !== currentUser.lastName ||
+      formData.username !== currentUser.username;
+    setHasChanges(changed);
+  }, [formData, currentUser]);
 
   if (!currentUser) {
     navigate("/login");
     return null;
   }
+
+  const handleSaveProfile = async () => {
+    if (!hasChanges || isPending) return;
+
+    try {
+      const response = await updateProfile({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        username: formData.username,
+      });
+
+      updateUser(response.user);
+      toast.success("Profile updated successfully");
+      setHasChanges(false);
+    } catch (error) {
+      // Error is handled by the request interceptor
+    }
+  };
+
+  const handleNotificationToggle = async (enabled: boolean) => {
+    try {
+      const response = await updateProfile({
+        notificationsEnabled: enabled,
+      });
+      updateUser(response.user);
+      toast.success(`Notifications ${enabled ? "enabled" : "disabled"}`);
+    } catch (error) {
+      // Error is handled by the request interceptor
+    }
+  };
+
+  const handleSoundToggle = async (enabled: boolean) => {
+    try {
+      const response = await updateProfile({
+        soundEnabled: enabled,
+      });
+      updateUser(response.user);
+      toast.success(`Sound ${enabled ? "enabled" : "disabled"}`);
+    } catch (error) {
+      // Error is handled by the request interceptor
+    }
+  };
+
+  const handleThemeToggle = async (theme: "light" | "dark") => {
+    try {
+      const response = await updateProfile({
+        theme: theme,
+      });
+      updateUser(response.user);
+      toast.success(`Theme changed to ${theme}`);
+    } catch (error) {
+      // Error is handled by the request interceptor
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -66,29 +136,34 @@ export function SettingsPage() {
           id: "firstName",
           label: "First Name",
           type: "input",
-          value: firstName,
-          onChange: setFirstName,
+          value: formData.firstName,
+          onChange: (value: string) =>
+            setFormData({ ...formData, firstName: value }),
         },
         {
           id: "lastName",
           label: "Last Name",
           type: "input",
-          value: lastName,
-          onChange: setLastName,
+          value: formData.lastName,
+          onChange: (value: string) =>
+            setFormData({ ...formData, lastName: value }),
         },
         {
           id: "username",
           label: "Username",
           type: "input",
-          value: username,
-          onChange: setUsername,
+          value: formData.username,
+          onChange: (value: string) =>
+            setFormData({ ...formData, username: value }),
         },
         {
           id: "email",
           label: "Email",
           type: "input",
-          value: email,
-          onChange: setEmail,
+          value: formData.email,
+          disabled: true,
+          onChange: (value: string) =>
+            setFormData({ ...formData, email: value }),
         },
       ],
     },
@@ -100,15 +175,15 @@ export function SettingsPage() {
           id: "notifications",
           label: "Push Notifications",
           type: "switch",
-          value: notificationsEnabled,
-          onChange: setNotificationsEnabled,
+          value: currentUser?.notificationsEnabled ?? true,
+          onChange: handleNotificationToggle,
         },
         {
           id: "sound",
           label: "Sound",
           type: "switch",
-          value: soundEnabled,
-          onChange: setSoundEnabled,
+          value: currentUser?.soundEnabled ?? true,
+          onChange: handleSoundToggle,
         },
       ],
     },
@@ -116,11 +191,17 @@ export function SettingsPage() {
       title: "Privacy & Security",
       icon: Lock,
       items: [
-        { id: "password", label: "Change Password", type: "button" },
+        {
+          id: "password",
+          label: "Change Password",
+          type: "button",
+          onClick: () => setShowChangePasswordModal(true),
+        },
         {
           id: "two-factor",
           label: "Two-Factor Authentication",
           type: "button",
+          disabled: true,
         },
       ],
     },
@@ -210,7 +291,7 @@ export function SettingsPage() {
               {section.items.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between py-2"
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 py-2"
                 >
                   <Label
                     htmlFor={item.id}
@@ -220,13 +301,15 @@ export function SettingsPage() {
                   </Label>
 
                   {item.type === "switch" && "onChange" in item && (
-                    <Switch
-                      id={item.id}
-                      checked={item.value as boolean}
-                      onCheckedChange={
-                        item.onChange as (checked: boolean) => void
-                      }
-                    />
+                    <div className="p-1 rounded-full border border-border/50 bg-background/30 w-fit">
+                      <Switch
+                        id={item.id}
+                        checked={item.value as boolean}
+                        onCheckedChange={
+                          item.onChange as (checked: boolean) => void
+                        }
+                      />
+                    </div>
                   )}
 
                   {item.type === "input" && "onChange" in item && (
@@ -238,7 +321,8 @@ export function SettingsPage() {
                           e.target.value,
                         )
                       }
-                      className="max-w-xs bg-background border-border"
+                      disabled={"disabled" in item && item.disabled}
+                      className="w-full sm:max-w-xs bg-background border-border disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   )}
 
@@ -246,7 +330,13 @@ export function SettingsPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="border-border"
+                      className="border-border w-fit self-start sm:self-auto"
+                      onClick={
+                        "onClick" in item
+                          ? (item.onClick as () => void)
+                          : undefined
+                      }
+                      disabled={"disabled" in item && item.disabled}
                     >
                       Configure
                     </Button>
@@ -254,6 +344,19 @@ export function SettingsPage() {
                 </div>
               ))}
             </div>
+
+            {/* Save Button for Profile Section */}
+            {section.title === "Profile" && hasChanges && (
+              <div className="mt-6 pt-4 border-t border-border w-full flex justify-end">
+                <Button
+                  onClick={handleSaveProfile}
+                  disabled={isPending}
+                  className="w-fit bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  {isPending ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            )}
           </motion.div>
         ))}
 
@@ -265,15 +368,44 @@ export function SettingsPage() {
           className="bg-card border border-border rounded-xl p-6 mb-6"
         >
           <div className="space-y-4">
-            <button className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-background/50 transition-colors text-left">
-              <Palette className="w-5 h-5 text-muted-foreground" />
-              <span>Appearance</span>
-            </button>
+            <div className="flex items-center justify-between p-3 rounded-lg hover:bg-background/50 transition-colors">
+              <div className="flex items-center gap-3">
+                <Palette className="w-5 h-5 text-muted-foreground" />
+                <span>Appearance</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={
+                    currentUser?.theme === "light" ? "default" : "outline"
+                  }
+                  size="sm"
+                  onClick={() => handleThemeToggle("light")}
+                  className="gap-2"
+                >
+                  <Sun className="w-4 h-4" />
+                  Light
+                </Button>
+                <Button
+                  variant={
+                    currentUser?.theme === "dark" ? "default" : "outline"
+                  }
+                  size="sm"
+                  onClick={() => handleThemeToggle("dark")}
+                  className="gap-2"
+                >
+                  <Moon className="w-4 h-4" />
+                  Dark
+                </Button>
+              </div>
+            </div>
 
-            <button className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-background/50 transition-colors text-left">
+            <a
+              href="mailto:khalidoyeneye@gmail.com"
+              className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-background/50 transition-colors text-left"
+            >
               <HelpCircle className="w-5 h-5 text-muted-foreground" />
               <span>Help & Support</span>
-            </button>
+            </a>
           </div>
         </motion.div>
 
@@ -302,6 +434,13 @@ export function SettingsPage() {
         description="You will need to sign in again to access your account."
         confirmText="Sign Out"
         onConfirm={handleLogout}
+        variant="destructive"
+      />
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        open={showChangePasswordModal}
+        onOpenChange={setShowChangePasswordModal}
       />
     </div>
   );

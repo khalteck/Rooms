@@ -1,6 +1,7 @@
 import { motion } from "motion/react";
 import { ArrowLeft, MessageSquare, UserPlus, Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { Button } from "../../../components/ui/button";
 import {
   Avatar,
@@ -8,6 +9,8 @@ import {
   AvatarImage,
 } from "../../../components/ui/avatar";
 import { AnimatedBackground } from "../../../components/AnimatedBackground";
+import { EmptyNotificationsState } from "./EmptyNotificationsState";
+import { NotificationDetailModal } from "./NotificationDetailModal";
 
 interface Notification {
   id: string;
@@ -62,6 +65,14 @@ const notifications: Notification[] = [
 
 export function NotificationsPage() {
   const navigate = useNavigate();
+  const [selectedNotification, setSelectedNotification] =
+    useState<Notification | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+
+  const handleNotificationClick = (notification: Notification) => {
+    setSelectedNotification(notification);
+    setShowDetailModal(true);
+  };
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -101,60 +112,76 @@ export function NotificationsPage() {
           </p>
         </motion.div>
 
-        {/* Notifications List */}
-        <div className="space-y-3">
-          {notifications.map((notification, index) => {
-            const Icon = getIcon(notification.type);
+        {/* Notifications List or Empty State */}
+        {[].length === 0 ? (
+          <EmptyNotificationsState />
+        ) : (
+          <div className="space-y-3">
+            {notifications.map((notification, index) => {
+              const Icon = getIcon(notification.type);
 
-            return (
-              <motion.div
-                key={notification.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.05, duration: 0.4 }}
-                className={`bg-card border border-border rounded-xl p-4 hover:border-primary/50 transition-colors ${
-                  !notification.read ? "bg-primary/5" : ""
-                }`}
-              >
-                <div className="flex items-start gap-4">
-                  {notification.avatar ? (
-                    <Avatar className="w-12 h-12 border-2 border-border">
-                      <AvatarImage
-                        src={notification.avatar}
-                        alt={notification.title}
-                      />
-                      <AvatarFallback>{notification.title[0]}</AvatarFallback>
-                    </Avatar>
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Icon className="w-6 h-6 text-primary" />
-                    </div>
-                  )}
+              return (
+                <motion.div
+                  key={notification.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05, duration: 0.4 }}
+                  onClick={() => handleNotificationClick(notification)}
+                  className={`bg-card border border-border rounded-xl p-4 hover:border-primary/50 transition-colors cursor-pointer ${
+                    !notification.read ? "bg-primary/5" : ""
+                  }`}
+                >
+                  <div className="flex items-start gap-4">
+                    {notification.avatar ? (
+                      <Avatar className="w-12 h-12 border-2 border-border">
+                        <AvatarImage
+                          src={notification.avatar}
+                          alt={notification.title}
+                        />
+                        <AvatarFallback>{notification.title[0]}</AvatarFallback>
+                      </Avatar>
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Icon className="w-6 h-6 text-primary" />
+                      </div>
+                    )}
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between mb-1">
-                      <h3 className="font-medium">{notification.title}</h3>
-                      {!notification.read && (
-                        <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-2" />
-                      )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between mb-1">
+                        <h3 className="font-medium">{notification.title}</h3>
+                        {!notification.read && (
+                          <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-2" />
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-1">
+                        {notification.message}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(notification.timestamp).toLocaleDateString()}{" "}
+                        at{" "}
+                        {new Date(notification.timestamp).toLocaleTimeString(
+                          [],
+                          {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          },
+                        )}
+                      </p>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-1">
-                      {notification.message}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(notification.timestamp).toLocaleDateString()} at{" "}
-                      {new Date(notification.timestamp).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </p>
                   </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
       </div>
+
+      {/* Notification Detail Modal */}
+      <NotificationDetailModal
+        notification={selectedNotification}
+        open={showDetailModal}
+        onOpenChange={setShowDetailModal}
+      />
     </div>
   );
 }

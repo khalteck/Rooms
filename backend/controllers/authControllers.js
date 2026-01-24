@@ -189,3 +189,98 @@ exports.resetPassword = asyncHandler(async (req, res) => {
     message: "Password reset successful",
   });
 });
+
+//================================================================
+// Update user profile
+//================================================================
+
+exports.updateProfile = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const {
+    firstName,
+    lastName,
+    username,
+    avatar,
+    notificationsEnabled,
+    soundEnabled,
+    theme,
+  } = req?.body || {};
+
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new ApiError(404, "User not found", "No user with that ID exists");
+  }
+
+  // Update fields if provided
+  if (firstName) user.firstName = firstName;
+  if (lastName) user.lastName = lastName;
+  if (username) user.username = username;
+  if (avatar) user.avatar = avatar;
+  if (notificationsEnabled !== undefined)
+    user.notificationsEnabled = notificationsEnabled;
+  if (soundEnabled !== undefined) user.soundEnabled = soundEnabled;
+  if (theme) user.theme = theme;
+
+  await user.save();
+
+  res.status(200).json({
+    message: "Profile updated successfully",
+    user,
+  });
+});
+
+//================================================================
+// Get user profile
+//================================================================
+
+exports.getAccount = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new ApiError(404, "User not found", "No user with that ID exists");
+  }
+
+  res.status(200).json({
+    user,
+  });
+});
+
+//================================================================
+// change user password
+//================================================================
+
+exports.changePassword = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const { currentPassword, newPassword } = req?.body || {};
+
+  if (!currentPassword || !newPassword) {
+    throw new ApiError(
+      400,
+      "All fields are required",
+      "Current and new password are required",
+    );
+  }
+
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new ApiError(404, "User not found", "No user with that ID exists");
+  }
+
+  // Verify current password
+  const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+  if (!isPasswordValid) {
+    throw new ApiError(401, "Invalid current password", "Password mismatch");
+  }
+
+  // Hash new password
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+  user.password = hashedPassword;
+  await user.save();
+
+  res.status(200).json({
+    message: "Password changed successfully",
+  });
+});

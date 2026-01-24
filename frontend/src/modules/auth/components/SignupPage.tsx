@@ -9,6 +9,7 @@ import { AnimatedBackground } from "../../../components/AnimatedBackground";
 import { useAuthStore } from "../../../store";
 import { toast } from "sonner";
 import { useAppPost } from "../../../hooks/useAppRequest";
+import { apiRoutes } from "../../../helpers/apiRoutes";
 
 export function SignupPage() {
   const navigate = useNavigate();
@@ -22,7 +23,9 @@ export function SignupPage() {
   });
   const [showPassword, setShowPassword] = useState(false);
 
-  const { mutateAsync: register, isPending } = useAppPost("/auth/register");
+  const { mutateAsync: register, isPending } = useAppPost(
+    apiRoutes.auth.signup,
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,9 +73,9 @@ export function SignupPage() {
         >
           {/* Back Button */}
           <Button
-            variant="ghost"
             onClick={() => navigate("/")}
-            className="mb-6 text-muted-foreground hover:text-foreground"
+            variant="outline"
+            className="border-border hover:bg-card hover:text-white px-8 mb-5"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back

@@ -9,6 +9,9 @@ export const currentUser: User = {
   avatar:
     "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop",
   status: "online",
+  notificationsEnabled: true,
+  soundEnabled: true,
+  theme: "light",
   createdAt: new Date("2024-01-15"),
   updatedAt: new Date("2026-01-20"),
 };

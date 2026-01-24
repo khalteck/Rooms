@@ -6,6 +6,9 @@ export interface User {
   username: string;
   avatar?: string;
   status?: "online" | "offline" | "away";
+  notificationsEnabled?: boolean;
+  soundEnabled?: boolean;
+  theme?: "light" | "dark";
   createdAt: Date;
   updatedAt: Date;
 }

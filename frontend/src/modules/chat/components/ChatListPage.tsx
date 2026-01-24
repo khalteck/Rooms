@@ -11,14 +11,23 @@ import {
 } from "../../../components/ui/avatar";
 import { AnimatedBackground } from "../../../components/AnimatedBackground";
 import { RoomCard } from "./RoomCard";
-import { rooms } from "../../../mockData";
+import { EmptyRoomsState } from "./EmptyRoomsState";
+import { CreateRoomModal } from "./CreateRoomModal";
+// import { rooms } from "../../../mockData";
 import { useAuthStore } from "../../../store";
+
+interface Room {
+  id: string;
+  name: string;
+}
 
 export function ChatListPage() {
   const navigate = useNavigate();
   const currentUser = useAuthStore((state) => state.user);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showCreateRoomModal, setShowCreateRoomModal] = useState(false);
 
+  const rooms: Room[] = []; // Replace with actual rooms from state or props
   const filteredRooms = rooms.filter((room) =>
     room.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
@@ -81,56 +90,79 @@ export function ChatListPage() {
         </motion.div>
 
         {/* Search Bar */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.6 }}
-          className="mb-8"
-        >
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Search rooms..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-12 bg-card border-border h-12 rounded-xl"
-            />
-          </div>
-        </motion.div>
-
-        {/* Room List */}
-        <div className="space-y-3">
-          {filteredRooms.map((room, index) => (
-            <motion.div
-              key={room.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 + index * 0.05, duration: 0.5 }}
-            >
-              <RoomCard
-                room={room}
-                onClick={() => navigate(`/app/chats/${room.id}`)}
-              />
-            </motion.div>
-          ))}
-        </div>
-
-        {/* New Room Button */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.6, duration: 0.4 }}
-          className="fixed bottom-8 right-8"
-        >
-          <Button
-            size="lg"
-            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full w-14 h-14 shadow-lg shadow-primary/20"
+        {rooms?.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+            className="mb-8"
           >
-            <Plus className="w-6 h-6" />
-          </Button>
-        </motion.div>
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search rooms..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-12 bg-card border-border h-12 rounded-xl"
+              />
+            </div>
+          </motion.div>
+        )}
+
+        {/* Room List or Empty State */}
+        {rooms.length === 0 ? (
+          <EmptyRoomsState onCreateRoom={() => setShowCreateRoomModal(true)} />
+        ) : filteredRooms.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-20"
+          >
+            <p className="text-muted-foreground">No rooms match your search</p>
+          </motion.div>
+        ) : (
+          <div className="space-y-3">
+            {filteredRooms.map((room, index) => (
+              <motion.div
+                key={room.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 + index * 0.05, duration: 0.5 }}
+              >
+                <RoomCard
+                  room={room as any}
+                  onClick={() => navigate(`/app/chats/${room.id}`)}
+                />
+              </motion.div>
+            ))}
+          </div>
+        )}
+
+        {/* New Room Button - Only show when rooms exist */}
+        {rooms.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.6, duration: 0.4 }}
+            className="fixed bottom-8 right-8"
+          >
+            <Button
+              size="lg"
+              onClick={() => setShowCreateRoomModal(true)}
+              className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full w-14 h-14 shadow-lg shadow-primary/20"
+            >
+              <Plus className="w-6 h-6" />
+            </Button>
+          </motion.div>
+        )}
       </div>
+
+      {/* Create Room Modal */}
+      <CreateRoomModal
+        open={showCreateRoomModal}
+        onOpenChange={setShowCreateRoomModal}
+      />
     </div>
   );
 }
