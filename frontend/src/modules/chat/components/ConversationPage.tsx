@@ -11,58 +11,235 @@ import {
 } from "../../../components/ui/avatar";
 import { RoomBackground } from "./RoomBackground";
 import { BackgroundDecor } from "./BackgroundDecor";
-import { rooms, messages as initialMessages } from "../../../mockData";
 import { useAuthStore } from "../../../store";
-import { Message } from "../../../types";
+import { Message, Room } from "../../../types";
+import { useAppQuery, useAppInfiniteQuery, useAppPost } from "../../../hooks";
+import { apiRoutes } from "../../../helpers/apiRoutes";
+import { toast } from "sonner";
+import { useQueryClient, InfiniteData } from "@tanstack/react-query";
+
+interface GetRoomResponse {
+  room: Room;
+}
+
+interface GetMessagesResponse {
+  messages: Message[];
+  pagination: {
+    hasMore: boolean;
+    nextCursor: string | null;
+  };
+}
+
+interface SendMessageData {
+  content: string;
+}
+
+interface SendMessageResponse {
+  message: Message;
+}
 
 export function ConversationPage() {
   const navigate = useNavigate();
   const { roomId } = useParams<{ roomId: string }>();
   const currentUser = useAuthStore((state) => state.user);
-  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
-  const [isEntering, setIsEntering] = useState(true);
+  const [isEntering, setIsEntering] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
 
-  const room = rooms.find((r) => r.id === roomId);
-  const otherUser = room?.participants.find((p) => p.id !== currentUser?.id);
+  // Fetch room data
+  const {
+    data: roomData,
+    isLoading: isLoadingRoom,
+    error: roomError,
+  } = useAppQuery<GetRoomResponse>(
+    ["room", roomId || ""],
+    apiRoutes.rooms.getRoomById(roomId!),
+    {},
+    {
+      enabled: !!roomId,
+      showError: false,
+    },
+  );
+
+  // Fetch messages with infinite scroll
+  const {
+    data: messagesData,
+    isLoading: isLoadingMessages,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useAppInfiniteQuery<GetMessagesResponse>(
+    ["messages", roomId || ""],
+    apiRoutes.messages.getMessages(roomId!),
+    {
+      params: { limit: 20 },
+    },
+    {
+      enabled: !!roomId,
+      showError: false,
+      getNextPageParam: (lastPage) => {
+        return lastPage.pagination.hasMore
+          ? lastPage.pagination.nextCursor || undefined
+          : undefined;
+      },
+    },
+  );
+
+  // Send message mutation
+  const { mutate: sendMessage, isPending: isSending } = useAppPost<
+    SendMessageResponse,
+    SendMessageData
+  >(
+    apiRoutes.messages.sendMessage(roomId!),
+    {},
+    {
+      showError: true,
+      onSuccess: (data) => {
+        // Add new message to the list
+        queryClient.setQueryData<InfiniteData<GetMessagesResponse>>(
+          ["messages", roomId],
+          (old) => {
+            if (!old) return old;
+            return {
+              ...old,
+              pages: old.pages.map((page, index) =>
+                index === 0
+                  ? {
+                      ...page,
+                      messages: [...page.messages, data.message],
+                    }
+                  : page,
+              ),
+            };
+          },
+        );
+        setNewMessage("");
+      },
+    },
+  );
+
+  // Mark messages as read mutation
+  const { mutate: markAsRead } = useAppPost(
+    apiRoutes.messages.markAsRead(roomId!),
+    {},
+    {
+      showError: false,
+    },
+  );
+
+  const room = roomData?.room;
+  const otherUser = room?.participants.find((p) => p._id !== currentUser?._id);
+
+  // Flatten all messages from all pages
+  const allMessages: Message[] =
+    messagesData?.pages?.flatMap(
+      (page: GetMessagesResponse) => page.messages,
+    ) || [];
 
   useEffect(() => {
     if (!roomId) return;
-    // Load messages for this room
-    const roomMessages = initialMessages.filter((m) => m.roomId === roomId);
-    setMessages(roomMessages);
 
-    // Door opening animation
-    const timer = setTimeout(() => {
-      setIsEntering(false);
-    }, 800);
-
-    return () => clearTimeout(timer);
+    // Mark messages as read when opening conversation
+    if (roomId) {
+      markAsRead({});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId]);
 
+  // Start door animation after loading is complete
   useEffect(() => {
+    if (!isLoadingRoom && !isLoadingMessages && roomData && messagesData) {
+      setIsEntering(true);
+      const timer = setTimeout(() => {
+        setIsEntering(false);
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoadingRoom, isLoadingMessages, roomData, messagesData]);
+
+  useEffect(() => {
+    // Scroll to bottom when new messages arrive
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [allMessages.length]);
+
+  useEffect(() => {
+    if (roomError) {
+      toast.error("Failed to load room");
+      navigate("/app/chats");
+    }
+  }, [roomError, navigate]);
+
+  // Handle infinite scroll
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const { scrollTop } = container;
+      // If scrolled near the top (50px threshold)
+      if (scrollTop < 50 && hasNextPage && !isFetchingNextPage) {
+        const previousScrollHeight = container.scrollHeight;
+        fetchNextPage().then(() => {
+          // Maintain scroll position after loading more messages
+          requestAnimationFrame(() => {
+            const newScrollHeight = container.scrollHeight;
+            container.scrollTop = newScrollHeight - previousScrollHeight;
+          });
+        });
+      }
+    };
+
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !currentUser || !roomId) return;
+    if (!newMessage.trim() || !currentUser || !roomId || isSending) return;
 
-    const message: Message = {
-      id: `msg-${Date.now()}`,
-      roomId,
-      senderId: currentUser.id,
-      content: newMessage,
-      timestamp: new Date(),
-      read: false,
-    };
-
-    setMessages([...messages, message]);
-    setNewMessage("");
+    sendMessage({ content: newMessage.trim() });
   };
 
-  if (!room || !otherUser || !currentUser) return null;
+  if (!currentUser) {
+    navigate("/login");
+    return null;
+  }
+
+  if (isLoadingRoom || isLoadingMessages) {
+    return (
+      <div className="relative min-h-[100dvh] overflow-hidden bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground text-lg mb-2">
+            Loading conversation...
+          </p>
+          <div className="flex justify-center gap-2">
+            <div
+              className="w-2 h-2 bg-primary rounded-full animate-bounce"
+              style={{ animationDelay: "0ms" }}
+            />
+            <div
+              className="w-2 h-2 bg-primary rounded-full animate-bounce"
+              style={{ animationDelay: "150ms" }}
+            />
+            <div
+              className="w-2 h-2 bg-primary rounded-full animate-bounce"
+              style={{ animationDelay: "300ms" }}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!room || !otherUser) {
+    return (
+      <div className="relative min-h-[100dvh] overflow-hidden bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Room not found</p>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-[100dvh] overflow-hidden bg-background">
@@ -117,7 +294,7 @@ export function ConversationPage() {
       </AnimatePresence>
 
       {/* Bird's Eye View Background */}
-      <RoomBackground currentUser={currentUser} otherUser={otherUser} />
+      <RoomBackground currentUser={currentUser!} otherUser={otherUser} />
 
       {/* Decorative Background Elements */}
       <BackgroundDecor />
@@ -190,33 +367,59 @@ export function ConversationPage() {
         </motion.div>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto px-4 pt-6 pb-12">
+        <div
+          ref={messagesContainerRef}
+          className="flex-1 overflow-y-auto px-4 pt-6 pb-12"
+        >
           <div className="max-w-4xl mx-auto space-y-4">
-            {messages.map((message, index) => (
+            {isFetchingNextPage && (
+              <div className="text-center py-4">
+                <p className="text-sm text-muted-foreground">
+                  Loading more messages...
+                </p>
+              </div>
+            )}
+            {allMessages.map((message: Message, index: number) => (
               <motion.div
-                key={message.id}
+                key={message._id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
                 className={`flex ${
-                  message.senderId === currentUser.id
-                    ? "justify-end"
-                    : "justify-start"
+                  message.type === "system"
+                    ? "justify-center"
+                    : message.senderId === currentUser._id
+                      ? "justify-end"
+                      : "justify-start"
                 }`}
               >
                 <div
-                  className={`max-w-[70%] rounded-2xl px-4 py-3  backdrop-blur-lg opacity-80 ${
-                    message.senderId === currentUser.id
-                      ? "bg-primary text-primary-foreground rounded-br-sm"
-                      : "bg-card border border-border rounded-bl-sm"
+                  className={`${
+                    message.type === "system"
+                      ? "max-w-[60%] md:max-w-[50%] rounded-md px-3 py-1.5 backdrop-blur-lg bg-card border border-border/50"
+                      : `max-w-[70%] rounded-2xl px-4 py-3 backdrop-blur-lg opacity-80 ${
+                          message.senderId === currentUser._id
+                            ? "bg-primary text-primary-foreground rounded-br-sm"
+                            : "bg-card border border-border rounded-bl-sm"
+                        }`
                   }`}
                 >
-                  <p className="break-words">{message.content}</p>
                   <p
-                    className={`text-xs mt-1 ${
-                      message.senderId === currentUser.id
-                        ? "text-primary-foreground/70"
-                        : "text-muted-foreground"
+                    className={`break-words ${
+                      message.type === "system" ? "text-xs opacity-60" : ""
+                    }`}
+                  >
+                    {message.content}
+                  </p>
+                  <p
+                    className={`mt-1 ${
+                      message.type === "system"
+                        ? "text-[10px] text-center text-muted-foreground/70 opacity-60"
+                        : `text-xs ${
+                            message.senderId === currentUser._id
+                              ? "text-primary-foreground/70"
+                              : "text-muted-foreground"
+                          }`
                     }`}
                   >
                     {new Date(message.timestamp).toLocaleTimeString([], {
@@ -252,6 +455,7 @@ export function ConversationPage() {
             <Button
               type="submit"
               size="icon"
+              disabled={isSending || !newMessage.trim()}
               className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full w-12 h-12"
             >
               <Send className="w-5 h-5" />

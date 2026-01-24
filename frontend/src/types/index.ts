@@ -1,4 +1,5 @@
 export interface User {
+  _id: string;
   id: string;
   firstName: string;
   lastName: string;
@@ -15,19 +16,27 @@ export interface User {
 }
 
 export interface Message {
+  _id: string;
   id: string;
   roomId: string;
   senderId: string;
   content: string;
   timestamp: Date;
   read: boolean;
+  type?: "system" | "user";
+}
+
+export interface LastMessage {
+  id: string;
+  content: string;
+  timestamp: Date;
 }
 
 export interface Room {
-  id: string;
+  _id: string;
   name: string;
   participants: User[];
-  lastMessage?: Message;
+  lastMessage?: LastMessage;
   unreadCount: number;
   createdAt: Date;
 }

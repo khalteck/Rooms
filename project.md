@@ -7,33 +7,48 @@ A modern chat application built with React (Vite) frontend and Node.js (Express)
 ```
 Rooms/
 │
-├── backend/                                  # Node.js + Express API
+├── backend/                                  # Node.js + Express API (TypeScript)
 │   ├── .env.example                         # Environment variables template
 │   ├── .gitignore                           # Git ignore rules
-│   ├── app.js                               # Main application entry point
+│   ├── tsconfig.json                        # TypeScript configuration
+│   ├── MIGRATION.md                         # TypeScript migration documentation
+│   ├── app.ts                               # Main application entry point
 │   ├── package.json                         # Backend dependencies
 │   │
+│   ├── types/                               # TypeScript type definitions
+│   │   └── index.ts                        # Shared interfaces and types
+│   │
 │   ├── controllers/                         # Route controllers
-│   │   ├── authControllers.js              # Authentication logic
-│   │   └── blogController.js               # Blog CRUD operations
+│   │   ├── authControllers.ts              # Authentication logic
+│   │   └── blogController.ts               # Blog CRUD operations
 │   │
 │   ├── helpers/                             # Helper utilities
-│   │   ├── ApiError.js                     # Custom error class
-│   │   └── asyncHandler.js                 # Async error wrapper
+│   │   ├── ApiError.ts                     # Custom error class
+│   │   └── asyncHandler.ts                 # Async error wrapper
 │   │
 │   ├── middleware/                          # Express middleware
-│   │   └── errorHandler.js                 # Centralized error handling
+│   │   ├── errorHandler.ts                 # Centralized error handling
+│   │   └── requireAuth.ts                  # Authentication middleware
 │   │
 │   ├── models/                              # Mongoose models
-│   │   ├── blogs.js                        # Blog schema
-│   │   └── users.js                        # User schema
+│   │   ├── blogs.ts                        # Blog schema
+│   │   └── users.ts                        # User schema
 │   │
 │   ├── public/                              # Static assets
 │   │   └── styles.css                      # Public CSS
 │   │
-│   └── routes/                              # API routes
-│       ├── authRoutes.js                   # Authentication endpoints
-│       └── blogRoutes.js                   # Blog endpoints
+│   ├── routes/                              # API routes
+│   │   ├── authRoutes.ts                   # Authentication endpoints
+│   │   └── blogRoutes.ts                   # Blog endpoints
+│   │
+│   └── dist/                                # Compiled JavaScript (gitignored)
+│       ├── app.js
+│       ├── controllers/
+│       ├── helpers/
+│       ├── middleware/
+│       ├── models/
+│       ├── routes/
+│       └── types/
 │
 └── frontend/                                # React + Vite + TypeScript
     ├── .env.example                        # Environment variables template
@@ -179,11 +194,13 @@ Rooms/
 ### Backend
 
 - **Runtime**: Node.js
+- **Language**: TypeScript
 - **Framework**: Express.js
 - **Database**: MongoDB (Mongoose ODM)
 - **Authentication**: JWT + bcrypt
 - **Validation**: validator.js
 - **Error Handling**: Custom ApiError + asyncHandler
+- **Development**: ts-node-dev (hot reload)
 
 ### Frontend
 

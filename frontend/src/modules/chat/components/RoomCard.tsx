@@ -8,6 +8,7 @@ import { Room } from "../../../types";
 
 interface RoomCardProps {
   room: Room;
+  currentUserId: string;
   onClick: () => void;
 }
 
@@ -25,8 +26,8 @@ function formatTimeAgo(date: Date): string {
   return `${Math.floor(diffInSeconds / 604800)}w ago`;
 }
 
-export function RoomCard({ room, onClick }: RoomCardProps) {
-  const otherUser = room.participants.find((p) => p.id !== "user-1");
+export function RoomCard({ room, currentUserId, onClick }: RoomCardProps) {
+  const otherUser = room.participants.find((p) => p._id !== currentUserId);
 
   if (!otherUser) return null;
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mail } from "lucide-react";
+import { Mail, MessageSquare } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,18 +12,58 @@ import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
 import { toast } from "sonner";
+import { useAppPost } from "../../../hooks";
+import { apiRoutes } from "../../../helpers/apiRoutes";
+import { Room } from "../../../types";
 
 interface CreateRoomModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onRoomCreated?: () => void;
 }
 
-export function CreateRoomModal({ open, onOpenChange }: CreateRoomModalProps) {
+interface CreateRoomData {
+  name: string;
+  participantEmail: string;
+}
+
+interface CreateRoomResponse {
+  room: Room;
+}
+
+export function CreateRoomModal({
+  open,
+  onOpenChange,
+  onRoomCreated,
+}: CreateRoomModalProps) {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+
+  const { mutate: createRoom, isPending } = useAppPost<
+    CreateRoomResponse,
+    CreateRoomData
+  >(
+    apiRoutes.rooms.createRoom,
+    {},
+    {
+      showError: true,
+      onSuccess: (data) => {
+        toast.success(`Room "${data.room.name}" created successfully`);
+        setName("");
+        setEmail("");
+        onOpenChange(false);
+        onRoomCreated?.();
+      },
+    },
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!name.trim()) {
+      toast.error("Please enter a room name");
+      return;
+    }
 
     if (!email.trim()) {
       toast.error("Please enter an email address");
@@ -37,23 +77,11 @@ export function CreateRoomModal({ open, onOpenChange }: CreateRoomModalProps) {
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      // TODO: Implement API call to create room
-      // await createRoom({ email });
-
-      toast.success(`Room created with ${email}`);
-      setEmail("");
-      onOpenChange(false);
-    } catch (error) {
-      toast.error("Failed to create room");
-    } finally {
-      setIsLoading(false);
-    }
+    createRoom({ name: name.trim(), participantEmail: email.trim() });
   };
 
   const handleClose = () => {
+    setName("");
     setEmail("");
     onOpenChange(false);
   };
@@ -64,11 +92,26 @@ export function CreateRoomModal({ open, onOpenChange }: CreateRoomModalProps) {
         <DialogHeader>
           <DialogTitle>Create New Room</DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Enter the email address of the person you want to chat with.
+            Enter a room name and the email of the person you want to chat with.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Room Name</Label>
+              <div className="relative">
+                <MessageSquare className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="My Chat Room"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="pl-10 bg-background border-border"
+                  required
+                />
+              </div>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
               <div className="relative">
@@ -92,15 +135,16 @@ export function CreateRoomModal({ open, onOpenChange }: CreateRoomModalProps) {
               variant="outline"
               onClick={handleClose}
               className="border-border"
+              disabled={isPending}
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={isPending}
               className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
-              {isLoading ? "Creating..." : "Create Room"}
+              {isPending ? "Creating..." : "Create Room"}
             </Button>
           </DialogFooter>
         </form>

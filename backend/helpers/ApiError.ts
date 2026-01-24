@@ -2,7 +2,11 @@
  * Custom API Error class
  */
 class ApiError extends Error {
-  constructor(statusCode, message, details = null) {
+  statusCode: number;
+  details: any;
+  isOperational: boolean;
+
+  constructor(statusCode: number, message: string, details: any = null) {
     super(message);
     this.statusCode = statusCode;
     this.details = details;
@@ -12,4 +16,4 @@ class ApiError extends Error {
   }
 }
 
-module.exports = ApiError;
+export default ApiError;

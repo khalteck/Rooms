@@ -1,21 +1,28 @@
 import {
   useQuery,
   useMutation,
+  useInfiniteQuery,
   UseQueryOptions,
   UseMutationOptions,
+  UseInfiniteQueryOptions,
+  InfiniteData,
 } from "@tanstack/react-query";
 import { appRequest } from "../helpers/AppRequest";
 import { AxiosRequestConfig } from "axios";
 
-interface UseAppRequestOptions<TData = any>
-  extends Omit<UseQueryOptions<TData, Error>, "queryKey" | "queryFn"> {
+interface UseAppRequestOptions<TData = any> extends Omit<
+  UseQueryOptions<TData, Error>,
+  "queryKey" | "queryFn"
+> {
   showError?: boolean;
   showSuccess?: boolean;
   successMessage?: string;
 }
 
-interface UseAppMutationOptions<TData = any, TVariables = any>
-  extends Omit<UseMutationOptions<TData, Error, TVariables>, "mutationFn"> {
+interface UseAppMutationOptions<TData = any, TVariables = any> extends Omit<
+  UseMutationOptions<TData, Error, TVariables>,
+  "mutationFn"
+> {
   showError?: boolean;
   showSuccess?: boolean;
   successMessage?: string;
@@ -28,7 +35,7 @@ export function useAppQuery<TData = any>(
   key: string | string[],
   url: string,
   config?: AxiosRequestConfig,
-  options?: UseAppRequestOptions<TData>
+  options?: UseAppRequestOptions<TData>,
 ) {
   const queryKey = Array.isArray(key) ? key : [key];
 
@@ -51,7 +58,7 @@ export function useAppQuery<TData = any>(
 export function useAppPost<TData = any, TVariables = any>(
   url: string,
   config?: AxiosRequestConfig,
-  options?: UseAppMutationOptions<TData, TVariables>
+  options?: UseAppMutationOptions<TData, TVariables>,
 ) {
   return useMutation<TData, Error, TVariables>({
     mutationFn: (data: TVariables) =>
@@ -71,7 +78,7 @@ export function useAppPost<TData = any, TVariables = any>(
 export function useAppPut<TData = any, TVariables = any>(
   url: string,
   config?: AxiosRequestConfig,
-  options?: UseAppMutationOptions<TData, TVariables>
+  options?: UseAppMutationOptions<TData, TVariables>,
 ) {
   return useMutation<TData, Error, TVariables>({
     mutationFn: (data: TVariables) =>
@@ -91,7 +98,7 @@ export function useAppPut<TData = any, TVariables = any>(
 export function useAppPatch<TData = any, TVariables = any>(
   url: string,
   config?: AxiosRequestConfig,
-  options?: UseAppMutationOptions<TData, TVariables>
+  options?: UseAppMutationOptions<TData, TVariables>,
 ) {
   return useMutation<TData, Error, TVariables>({
     mutationFn: (data: TVariables) =>
@@ -111,7 +118,7 @@ export function useAppPatch<TData = any, TVariables = any>(
 export function useAppDelete<TData = any, TVariables = any>(
   url: string | ((variables: TVariables) => string),
   config?: AxiosRequestConfig,
-  options?: UseAppMutationOptions<TData, TVariables>
+  options?: UseAppMutationOptions<TData, TVariables>,
 ) {
   return useMutation<TData, Error, TVariables>({
     mutationFn: (variables: TVariables) => {
@@ -132,10 +139,56 @@ export function useAppDelete<TData = any, TVariables = any>(
  */
 export function useAppMutation<TData = any, TVariables = any>(
   mutationFn: (variables: TVariables) => Promise<TData>,
-  options?: UseAppMutationOptions<TData, TVariables>
+  options?: UseAppMutationOptions<TData, TVariables>,
 ) {
   return useMutation<TData, Error, TVariables>({
     mutationFn,
+    ...options,
+  });
+}
+
+/**
+ * Hook for infinite scroll queries with cursor-based pagination
+ */
+export function useAppInfiniteQuery<TData = any>(
+  key: string | string[],
+  url: string,
+  config?: AxiosRequestConfig,
+  options?: Omit<
+    UseInfiniteQueryOptions<
+      TData,
+      Error,
+      InfiniteData<TData, unknown>,
+      string[],
+      string | undefined
+    >,
+    "queryKey" | "queryFn" | "getNextPageParam" | "initialPageParam"
+  > & {
+    showError?: boolean;
+    getNextPageParam?: (lastPage: TData) => string | undefined;
+  },
+) {
+  const queryKey = Array.isArray(key) ? key : [key];
+
+  return useInfiniteQuery<
+    TData,
+    Error,
+    InfiniteData<TData, unknown>,
+    string[],
+    string | undefined
+  >({
+    queryKey,
+    queryFn: ({ pageParam }) =>
+      appRequest.get<TData>(url, {
+        ...config,
+        params: {
+          ...config?.params,
+          cursor: pageParam,
+        },
+        showError: options?.showError,
+      }),
+    getNextPageParam: options?.getNextPageParam || (() => undefined),
+    initialPageParam: undefined,
     ...options,
   });
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { Bell, Settings, Search, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -10,15 +10,18 @@ import {
   AvatarImage,
 } from "../../../components/ui/avatar";
 import { AnimatedBackground } from "../../../components/AnimatedBackground";
+import { RoomListSkeleton } from "../../../components/AppSkeleton.tsx";
 import { RoomCard } from "./RoomCard";
 import { EmptyRoomsState } from "./EmptyRoomsState";
 import { CreateRoomModal } from "./CreateRoomModal";
-// import { rooms } from "../../../mockData";
 import { useAuthStore } from "../../../store";
+import { useAppQuery, useDebouncedValue } from "../../../hooks";
+import { apiRoutes } from "../../../helpers/apiRoutes";
+import { Room } from "../../../types";
+import { toast } from "sonner";
 
-interface Room {
-  id: string;
-  name: string;
+interface GetRoomsResponse {
+  rooms: Room[];
 }
 
 export function ChatListPage() {
@@ -27,10 +30,31 @@ export function ChatListPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateRoomModal, setShowCreateRoomModal] = useState(false);
 
-  const rooms: Room[] = []; // Replace with actual rooms from state or props
-  const filteredRooms = rooms.filter((room) =>
-    room.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  const debouncedSearch = useDebouncedValue(searchQuery, 500);
+
+  const {
+    data: roomsData,
+    isLoading,
+    error,
+    refetch,
+  } = useAppQuery<GetRoomsResponse>(
+    ["rooms", debouncedSearch],
+    apiRoutes.rooms.getRooms,
+    {
+      params: debouncedSearch ? { search: debouncedSearch } : undefined,
+    },
+    {
+      showError: false,
+    },
   );
+
+  useEffect(() => {
+    if (error) {
+      toast.error("Failed to load rooms");
+    }
+  }, [error]);
+
+  const rooms = roomsData?.rooms || [];
 
   if (!currentUser) {
     navigate("/login");
@@ -90,7 +114,7 @@ export function ChatListPage() {
         </motion.div>
 
         {/* Search Bar */}
-        {rooms?.length > 0 && (
+        {!isLoading && rooms.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -111,9 +135,11 @@ export function ChatListPage() {
         )}
 
         {/* Room List or Empty State */}
-        {rooms.length === 0 ? (
+        {isLoading ? (
+          <RoomListSkeleton count={6} />
+        ) : rooms.length === 0 && !searchQuery ? (
           <EmptyRoomsState onCreateRoom={() => setShowCreateRoomModal(true)} />
-        ) : filteredRooms.length === 0 ? (
+        ) : rooms.length === 0 && searchQuery ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -123,16 +149,21 @@ export function ChatListPage() {
           </motion.div>
         ) : (
           <div className="space-y-3">
-            {filteredRooms.map((room, index) => (
+            {searchQuery && (
+              <p className="text-muted-foreground">Search results</p>
+            )}
+
+            {rooms.map((room, index) => (
               <motion.div
-                key={room.id}
+                key={room._id}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.3 + index * 0.05, duration: 0.5 }}
               >
                 <RoomCard
-                  room={room as any}
-                  onClick={() => navigate(`/app/chats/${room.id}`)}
+                  room={room}
+                  currentUserId={currentUser._id}
+                  onClick={() => navigate(`/app/chats/${room._id}`)}
                 />
               </motion.div>
             ))}
@@ -162,6 +193,7 @@ export function ChatListPage() {
       <CreateRoomModal
         open={showCreateRoomModal}
         onOpenChange={setShowCreateRoomModal}
+        onRoomCreated={() => refetch()}
       />
     </div>
   );

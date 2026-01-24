@@ -17,8 +17,8 @@ export const apiRoutes = {
     leaveRoom: (roomId: string) => `/rooms/${roomId}/leave`,
   },
   messages: {
-    getMessages: (roomId: string) => `/rooms/${roomId}/messages`,
-    sendMessage: (roomId: string) => `/rooms/${roomId}/messages`,
-    markAsRead: (roomId: string) => `/rooms/${roomId}/messages/mark-as-read`,
+    getMessages: (roomId: string) => `/rooms/chat/${roomId}/messages`,
+    sendMessage: (roomId: string) => `/rooms/chat/${roomId}/messages`,
+    markAsRead: (roomId: string) => `/rooms/chat/${roomId}/messages/read`,
   },
 };
