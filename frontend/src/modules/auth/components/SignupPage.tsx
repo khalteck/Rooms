@@ -54,7 +54,7 @@ export function SignupPage() {
     if (res.user && res.token) {
       toast.success(`Welcome, ${res.user.firstName}! 👋`);
       login(res.user, res.token);
-      navigate("/app/chats");
+      navigate("/app/onboarding");
     } else {
       toast.error("Registration failed. Please try again.");
     }

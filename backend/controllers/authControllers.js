@@ -204,6 +204,7 @@ exports.updateProfile = asyncHandler(async (req, res) => {
     notificationsEnabled,
     soundEnabled,
     theme,
+    onboardingCompleted,
   } = req?.body || {};
 
   const user = await User.findById(userId);
@@ -220,6 +221,8 @@ exports.updateProfile = asyncHandler(async (req, res) => {
     user.notificationsEnabled = notificationsEnabled;
   if (soundEnabled !== undefined) user.soundEnabled = soundEnabled;
   if (theme) user.theme = theme;
+  if (onboardingCompleted !== undefined)
+    user.onboardingCompleted = onboardingCompleted;
 
   await user.save();
 

@@ -17,6 +17,7 @@ const userSchema = new Schema(
     notificationsEnabled: { type: Boolean, default: true },
     soundEnabled: { type: Boolean, default: true },
     theme: { type: String, enum: ["light", "dark"], default: "light" },
+    onboardingCompleted: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

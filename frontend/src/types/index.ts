@@ -9,6 +9,7 @@ export interface User {
   notificationsEnabled?: boolean;
   soundEnabled?: boolean;
   theme?: "light" | "dark";
+  onboardingCompleted?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

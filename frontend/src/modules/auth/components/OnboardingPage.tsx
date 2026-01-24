@@ -4,6 +4,10 @@ import { MessageSquare, Users, Sparkles, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
 import { AnimatedBackground } from "../../../components/AnimatedBackground";
+import { useAuthStore } from "../../../store";
+import { useAppPatch } from "../../../hooks/useAppRequest";
+import { apiRoutes } from "../../../helpers/apiRoutes";
+import { toast } from "sonner";
 
 const steps = [
   {
@@ -28,18 +32,37 @@ const steps = [
 
 export function OnboardingPage() {
   const navigate = useNavigate();
+  const updateUser = useAuthStore((state) => state.updateUser);
   const [currentStep, setCurrentStep] = useState(0);
+
+  const { mutateAsync: updateProfile } = useAppPatch(
+    apiRoutes.account.updateAccount,
+  );
+
+  const completeOnboarding = async () => {
+    try {
+      const response = await updateProfile({
+        onboardingCompleted: true,
+      });
+      updateUser(response.user);
+      navigate("/app/chats");
+    } catch (error) {
+      toast.error("Failed to complete onboarding");
+      // Navigate anyway to not block the user
+      navigate("/app/chats");
+    }
+  };
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      navigate("/app/chats");
+      completeOnboarding();
     }
   };
 
   const handleSkip = () => {
-    navigate("/app/chats");
+    completeOnboarding();
   };
 
   return (
@@ -57,8 +80,8 @@ export function OnboardingPage() {
                   index === currentStep
                     ? "w-12 bg-primary"
                     : index < currentStep
-                    ? "w-8 bg-primary/50"
-                    : "w-8 bg-border"
+                      ? "w-8 bg-primary/50"
+                      : "w-8 bg-border"
                 }`}
               />
             ))}

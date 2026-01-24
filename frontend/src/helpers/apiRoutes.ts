@@ -1,7 +1,7 @@
 export const apiRoutes = {
   auth: {
     login: "/auth/login",
-    signup: "/auth/signup",
+    signup: "/auth/register",
     forgotPassword: "/auth/forgot-password",
     resetPassword: "/auth/reset-password",
   },

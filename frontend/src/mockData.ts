@@ -12,6 +12,7 @@ export const currentUser: User = {
   notificationsEnabled: true,
   soundEnabled: true,
   theme: "light",
+  onboardingCompleted: true,
   createdAt: new Date("2024-01-15"),
   updatedAt: new Date("2026-01-20"),
 };

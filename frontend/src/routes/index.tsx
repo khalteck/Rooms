@@ -11,6 +11,7 @@ import { SettingsPage } from "../modules/settings/pages";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { AuthLayout } from "./AuthLayout";
 import { AppLayout } from "./AppLayout";
+import { OnboardingGate } from "./OnboardingGate";
 
 export const router = createBrowserRouter([
   {
@@ -41,7 +42,7 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Navigate to="/app/chats" replace />,
+        element: <OnboardingGate />,
       },
       {
         path: "onboarding",
