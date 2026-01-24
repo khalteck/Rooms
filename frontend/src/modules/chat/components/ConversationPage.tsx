@@ -143,12 +143,20 @@ export function ConversationPage() {
               </Button>
 
               <Avatar className="w-10 h-10 border-2 border-primary/20">
-                <AvatarImage src={otherUser.avatar} alt={otherUser.firstName} />
-                <AvatarFallback>{otherUser.firstName[0]}</AvatarFallback>
+                <AvatarImage
+                  src={otherUser.avatar}
+                  alt={`${otherUser.firstName} ${otherUser.lastName}`}
+                />
+                <AvatarFallback>
+                  {otherUser.firstName[0]}
+                  {otherUser.lastName[0]}
+                </AvatarFallback>
               </Avatar>
 
               <div>
-                <h2 className="font-medium">{otherUser.firstName}</h2>
+                <h2 className="font-medium">
+                  {otherUser.firstName} {otherUser.lastName}
+                </h2>
                 <p className="text-xs text-muted-foreground">
                   {otherUser.status === "online" ? "Active now" : "Offline"}
                 </p>

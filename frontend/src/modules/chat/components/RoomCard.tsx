@@ -14,7 +14,7 @@ interface RoomCardProps {
 function formatTimeAgo(date: Date): string {
   const now = new Date();
   const diffInSeconds = Math.floor(
-    (now.getTime() - new Date(date).getTime()) / 1000
+    (now.getTime() - new Date(date).getTime()) / 1000,
   );
 
   if (diffInSeconds < 60) return "just now";
@@ -75,16 +75,22 @@ export function RoomCard({ room, onClick }: RoomCardProps) {
           {/* Avatar with status indicator */}
           <div className="relative">
             <Avatar className="w-14 h-14 border-2 border-border group-hover:border-primary/30 transition-colors">
-              <AvatarImage src={otherUser.avatar} alt={otherUser.name} />
-              <AvatarFallback>{otherUser.name[0]}</AvatarFallback>
+              <AvatarImage
+                src={otherUser.avatar}
+                alt={`${otherUser.firstName} ${otherUser.lastName}`}
+              />
+              <AvatarFallback>
+                {otherUser.firstName[0]}
+                {otherUser.lastName[0]}
+              </AvatarFallback>
             </Avatar>
             <div
               className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-card ${
                 otherUser.status === "online"
                   ? "bg-green-500"
                   : otherUser.status === "away"
-                  ? "bg-yellow-500"
-                  : "bg-gray-500"
+                    ? "bg-yellow-500"
+                    : "bg-gray-500"
               }`}
             />
           </div>

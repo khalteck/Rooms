@@ -22,6 +22,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "../../../components/ui/avatar";
+import { AppModal } from "../../../components/AppModal";
 import { AnimatedBackground } from "../../../components/AnimatedBackground";
 import { useAuthStore, useSettingsStore } from "../../../store";
 import { toast } from "sonner";
@@ -43,6 +44,7 @@ export function SettingsPage() {
   const [lastName, setLastName] = useState(currentUser?.lastName || "");
   const [username, setUsername] = useState(currentUser?.username || "");
   const [email, setEmail] = useState(currentUser?.email || "");
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   if (!currentUser) {
     navigate("/login");
@@ -282,7 +284,7 @@ export function SettingsPage() {
           transition={{ delay: 0.6, duration: 0.4 }}
         >
           <Button
-            onClick={handleLogout}
+            onClick={() => setShowLogoutDialog(true)}
             variant="outline"
             className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
           >
@@ -291,6 +293,16 @@ export function SettingsPage() {
           </Button>
         </motion.div>
       </div>
+
+      {/* Logout Confirmation Dialog */}
+      <AppModal
+        open={showLogoutDialog}
+        onOpenChange={setShowLogoutDialog}
+        title="Are you sure you want to sign out?"
+        description="You will need to sign in again to access your account."
+        confirmText="Sign Out"
+        onConfirm={handleLogout}
+      />
     </div>
   );
 }
