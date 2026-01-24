@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "motion/react";
-import { ArrowLeft, Mail, Lock } from "lucide-react";
+import { ArrowLeft, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -17,6 +17,7 @@ export function LoginPage() {
     email: "",
     password: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   const { mutateAsync: loginUser, isPending } = useAppPost("/auth/login");
 
@@ -34,9 +35,13 @@ export function LoginPage() {
       password: formData.password,
     });
 
-    toast.success(`Welcome back, ${res.user.firstName}! 👋`);
-    login(res.user, res.token);
-    navigate("/app/chats");
+    if (res.user && res.token) {
+      toast.success(`Welcome, ${res.user.firstName}! 👋`);
+      login(res.user, res.token);
+      navigate("/app/chats");
+    } else {
+      toast.error("Login failed. Please check your credentials and try again.");
+    }
   };
 
   return (
@@ -94,15 +99,26 @@ export function LoginPage() {
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <Input
                     id="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     value={formData.password}
                     onChange={(e) =>
                       setFormData({ ...formData, password: e.target.value })
                     }
-                    className="pl-10 bg-input border-border"
+                    className="pl-10 pr-10 bg-input border-border"
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </button>
                 </div>
               </div>
 

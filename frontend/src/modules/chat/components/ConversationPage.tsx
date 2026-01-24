@@ -143,12 +143,12 @@ export function ConversationPage() {
               </Button>
 
               <Avatar className="w-10 h-10 border-2 border-primary/20">
-                <AvatarImage src={otherUser.avatar} alt={otherUser.name} />
-                <AvatarFallback>{otherUser.name[0]}</AvatarFallback>
+                <AvatarImage src={otherUser.avatar} alt={otherUser.firstName} />
+                <AvatarFallback>{otherUser.firstName[0]}</AvatarFallback>
               </Avatar>
 
               <div>
-                <h2 className="font-medium">{otherUser.name}</h2>
+                <h2 className="font-medium">{otherUser.firstName}</h2>
                 <p className="text-xs text-muted-foreground">
                   {otherUser.status === "online" ? "Active now" : "Offline"}
                 </p>
@@ -197,7 +197,7 @@ export function ConversationPage() {
                 }`}
               >
                 <div
-                  className={`max-w-[70%] rounded-2xl px-4 py-3  backdrop-blur-lg opacity-70 ${
+                  className={`max-w-[70%] rounded-2xl px-4 py-3  backdrop-blur-lg opacity-80 ${
                     message.senderId === currentUser.id
                       ? "bg-primary text-primary-foreground rounded-br-sm"
                       : "bg-card border border-border rounded-bl-sm"

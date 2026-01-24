@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "motion/react";
-import { ArrowLeft, Mail, Lock, User } from "lucide-react";
+import { ArrowLeft, Mail, Lock, User, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -20,6 +20,7 @@ export function SignupPage() {
     email: "",
     password: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   const { mutateAsync: register, isPending } = useAppPost("/auth/register");
 
@@ -47,11 +48,13 @@ export function SignupPage() {
       password: formData.password,
     });
 
-    console.log("register response", res);
-
-    toast.success(`Welcome to Rooms, ${res.user.firstName}! 👋`);
-    login(res.user, res.token);
-    navigate("/app/onboarding");
+    if (res.user && res.token) {
+      toast.success(`Welcome, ${res.user.firstName}! 👋`);
+      login(res.user, res.token);
+      navigate("/app/chats");
+    } else {
+      toast.error("Registration failed. Please try again.");
+    }
   };
 
   return (
@@ -159,15 +162,26 @@ export function SignupPage() {
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <Input
                     id="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     value={formData.password}
                     onChange={(e) =>
                       setFormData({ ...formData, password: e.target.value })
                     }
-                    className="pl-10 bg-input border-border"
+                    className="pl-10 pr-10 bg-input border-border"
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </button>
                 </div>
               </div>
 

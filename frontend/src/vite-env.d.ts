@@ -1,9 +1,11 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
+  // Explicitly typed for better autocomplete
   readonly VITE_API_URL_PROD: string;
   readonly VITE_API_URL_DEV: string;
-  // add more env variables as needed
+  // Automatically support any other VITE_ prefixed variables
+  readonly [key: `VITE_${string}`]: string | undefined;
 }
 
 interface ImportMeta {
