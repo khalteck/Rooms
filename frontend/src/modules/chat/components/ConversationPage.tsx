@@ -150,14 +150,14 @@ export function ConversationPage() {
 
   // Start door animation after loading is complete
   useEffect(() => {
-    if (!isLoadingRoom && !isLoadingMessages && roomData && messagesData) {
+    if (!isLoadingRoom && !isLoadingMessages && roomData) {
       setIsEntering(true);
       const timer = setTimeout(() => {
         setIsEntering(false);
       }, 800);
       return () => clearTimeout(timer);
     }
-  }, [isLoadingRoom, isLoadingMessages, roomData, messagesData]);
+  }, [isLoadingRoom, isLoadingMessages, roomData]);
 
   useEffect(() => {
     // Scroll to bottom when new messages arrive
