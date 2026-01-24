@@ -81,19 +81,19 @@ class AppRequest {
           toast.error("Bad Request", { description: message });
           break;
         case 401:
-          toast.error("Unauthorized", { description: "Please login again" });
+          toast.error("Unauthorized", { description: message });
           // Could trigger logout here
           break;
         case 403:
           toast.error("Forbidden", {
-            description: "You do not have permission",
+            description: message || "You do not have permission",
           });
           break;
         case 404:
           toast.error("Not Found", { description: message });
           break;
         case 500:
-          toast.error("Server Error", {
+          toast.error("Internal Server Error", {
             description: "Please try again later",
           });
           break;
