@@ -1,5 +1,5 @@
 {
-  "name": "Rooms-backend",
+  "name": "rooms-backend",
   "version": "1.0.0",
   "description": "",
   "license": "ISC",
@@ -11,7 +11,7 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc",
+    "build": "npm install && tsc",
     "start": "node dist/app.js",
     "dev": "ts-node-dev --respawn --transpile-only app.ts",
     "watch": "tsc --watch"
