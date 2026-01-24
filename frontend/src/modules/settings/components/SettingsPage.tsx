@@ -301,15 +301,14 @@ export function SettingsPage() {
                   </Label>
 
                   {item.type === "switch" && "onChange" in item && (
-                    <div className="p-1 rounded-full border border-border/50 bg-background/30 w-fit">
-                      <Switch
-                        id={item.id}
-                        checked={item.value as boolean}
-                        onCheckedChange={
-                          item.onChange as (checked: boolean) => void
-                        }
-                      />
-                    </div>
+                    <Switch
+                      id={item.id}
+                      checked={item.value as boolean}
+                      onCheckedChange={
+                        item.onChange as (checked: boolean) => void
+                      }
+                      className="border border-border/50"
+                    />
                   )}
 
                   {item.type === "input" && "onChange" in item && (
