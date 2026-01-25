@@ -8,47 +8,44 @@ A modern chat application built with React (Vite) frontend and Node.js (Express)
 Rooms/
 │
 ├── backend/                                  # Node.js + Express API (TypeScript)
-│   ├── .env.example                         # Environment variables template
+│   ├── .env.local                           # Environment variables template
 │   ├── .gitignore                           # Git ignore rules
 │   ├── tsconfig.json                        # TypeScript configuration
 │   ├── MIGRATION.md                         # TypeScript migration documentation
-│   ├── app.ts                               # Main application entry point
 │   ├── package.json                         # Backend dependencies
-│   │
-│   ├── types/                               # TypeScript type definitions
-│   │   └── index.ts                        # Shared interfaces and types
-│   │
-│   ├── controllers/                         # Route controllers
-│   │   ├── authControllers.ts              # Authentication logic
-│   │   └── blogController.ts               # Blog CRUD operations
-│   │
-│   ├── helpers/                             # Helper utilities
-│   │   ├── ApiError.ts                     # Custom error class
-│   │   └── asyncHandler.ts                 # Async error wrapper
-│   │
-│   ├── middleware/                          # Express middleware
-│   │   ├── errorHandler.ts                 # Centralized error handling
-│   │   └── requireAuth.ts                  # Authentication middleware
-│   │
-│   ├── models/                              # Mongoose models
-│   │   ├── blogs.ts                        # Blog schema
-│   │   └── users.ts                        # User schema
+│   ├── render.yaml                          # Render deployment configuration
 │   │
 │   ├── public/                              # Static assets
-│   │   └── styles.css                      # Public CSS
+│   │   └──
 │   │
-│   ├── routes/                              # API routes
-│   │   ├── authRoutes.ts                   # Authentication endpoints
-│   │   └── blogRoutes.ts                   # Blog endpoints
-│   │
-│   └── dist/                                # Compiled JavaScript (gitignored)
-│       ├── app.js
-│       ├── controllers/
-│       ├── helpers/
-│       ├── middleware/
-│       ├── models/
-│       ├── routes/
-│       └── types/
+│   └── src/                                 # Source code
+│       ├── app.ts                          # Main application entry point
+│       │
+│       ├── types/                          # TypeScript type definitions
+│       │   └── index.ts                   # Shared interfaces and types
+│       │
+│       ├── controllers/                    # Route controllers
+│       │   ├── authControllers.ts         # Authentication logic
+│       │   ├── messageController.ts       # Message/chat operations
+│       │   └── roomsController.ts         # Room CRUD operations
+│       │
+│       ├── helpers/                        # Helper utilities
+│       │   ├── ApiError.ts                # Custom error class
+│       │   └── asyncHandler.ts            # Async error wrapper
+│       │
+│       ├── middleware/                     # Express middleware
+│       │   ├── errorHandler.ts            # Centralized error handling
+│       │   └── requireAuth.ts             # Authentication middleware
+│       │
+│       ├── models/                         # Mongoose models
+│       │   ├── messages.ts                # Message schema
+│       │   ├── rooms.ts                   # Room schema
+│       │   └── users.ts                   # User schema
+│       │
+│       └── routes/                         # API routes
+│           ├── authRoutes.ts              # Authentication endpoints
+│           ├── messageRoutes.ts           # Message endpoints
+│           └── roomsRoutes.ts             # Room endpoints
 │
 └── frontend/                                # React + Vite + TypeScript
     ├── .env.example                        # Environment variables template
@@ -77,6 +74,8 @@ Rooms/
         │
         ├── components/                     # Reusable components
         │   ├── AnimatedBackground.tsx
+        │   ├── AppModal.tsx
+        │   ├── AppSkeleton.tsx
         │   ├── RoomBackground.tsx
         │   ├── RoomCard.tsx
         │   │
@@ -130,17 +129,18 @@ Rooms/
         │       ├── toggle-group.tsx
         │       ├── toggle.tsx
         │       ├── tooltip.tsx
-        │       ├── use-mobile.ts
-        │       └── utils.ts
+        │       └── ...
         │
         ├── helpers/                        # Helper functions
+        │   ├── apiRoutes.ts               # API route definitions
         │   ├── AppRequest.ts              # Axios API wrapper
         │   ├── constant.ts                # App constants
         │   └── misc.ts                    # Miscellaneous utilities
         │
         ├── hooks/                          # Custom React hooks
         │   ├── index.ts                   # Hook exports
-        │   └── useAppRequest.ts           # API request hook
+        │   ├── useAppRequest.ts           # API request hook
+        │   └── useDebouncedValue.ts       # Debounce value hook
         │
         ├── modules/                        # Feature modules
         │   │
@@ -170,6 +170,7 @@ Rooms/
         │           └── SettingsPage.tsx
         │
         ├── routes/                         # Routing configuration
+        │   ├── OnboardingGate.tsx         # Onboarding guard
         │   ├── index.tsx                  # Route definitions
         │   ├── AppLayout.tsx              # App layout wrapper
         │   ├── AuthLayout.tsx             # Auth layout wrapper
@@ -216,20 +217,38 @@ Rooms/
 
 ## 🚀 API Endpoints
 
-### Authentication (`/api/v1/auth`)
+### Autheforgot-password` - Password reset request
 
-- `POST /register` - Create new user account
-- `POST /login` - User login
-- `POST /logout` - User logout
-- `POST /forgot-password` - Password reset request
-- `POST /reset-password` - Reset password
+- `POST /reset-password` - Reset password with token
+- `GET /me` - Get current user account (protected)
+- `PATCH /me` - Update user profile (protected)
+- `POST /me/change-password` - Change user password (protected)
 
-### Blogs (`/api/v1/blogs`)
+### Rooms (`/api/v1/rooms`)
 
-- `GET /` - Get all blogs
-- `POST /` - Create new blog
-- `GET /:id` - Get blog by ID
-- `DELETE /:id` - Delete blog
+- `GET /` - Get all rooms (protected)
+- `POST /` - Create new room (protected)
+- `GET /:id` - Get room by ID (protected)
+- `POST /:id/leave` - Leave a room (protected)
+
+### Messages (`/api/v1/rooms/chat`)
+
+Real-time chat rooms
+
+- ✅ JWT-based authentication
+- ✅ Password hashing with bcrypt
+- ✅ User profile management
+- ✅ Room creation and management
+- ✅ Message history and read receipts
+- ✅ Centralized error handling
+- ✅ Form validation
+- ✅ Responsive design
+- ✅ Dark mode support
+- ✅ Type-safe API requests
+- ✅ Toast notifications
+- ✅ Protected routes
+- ✅ Onboarding flow
+- ✅ Animated backgrounds and UI transition
 
 ## 📝 Features
 
