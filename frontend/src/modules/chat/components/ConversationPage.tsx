@@ -13,42 +13,32 @@ import { RoomBackground } from "./RoomBackground";
 import { BackgroundDecor } from "./BackgroundDecor";
 import { useAuthStore } from "../../../store";
 import { Message, Room } from "../../../types";
-import { useAppQuery, useAppInfiniteQuery, useAppPost } from "../../../hooks";
+import { useAppQuery } from "../../../hooks";
 import { apiRoutes } from "../../../helpers/apiRoutes";
 import { toast } from "sonner";
-import { useQueryClient, InfiniteData } from "@tanstack/react-query";
+import { socketService } from "../../../services/socketService";
 
 interface GetRoomResponse {
   room: Room;
-}
-
-interface GetMessagesResponse {
-  messages: Message[];
-  pagination: {
-    hasMore: boolean;
-    nextCursor: string | null;
-  };
-}
-
-interface SendMessageData {
-  content: string;
-}
-
-interface SendMessageResponse {
-  message: Message;
 }
 
 export function ConversationPage() {
   const navigate = useNavigate();
   const { roomId } = useParams<{ roomId: string }>();
   const currentUser = useAuthStore((state) => state.user);
+  const token = useAuthStore((state) => state.token);
+
   const [newMessage, setNewMessage] = useState("");
   const [isEntering, setIsEntering] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(true);
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingUserId, setTypingUserId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const queryClient = useQueryClient();
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Fetch room data
+  // Fetch room data (using REST API for initial load)
   const {
     data: roomData,
     isLoading: isLoadingRoom,
@@ -63,90 +53,88 @@ export function ConversationPage() {
     },
   );
 
-  // Fetch messages with infinite scroll
-  const {
-    data: messagesData,
-    isLoading: isLoadingMessages,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useAppInfiniteQuery<GetMessagesResponse>(
-    ["messages", roomId || ""],
-    apiRoutes.messages.getMessages(roomId!),
-    {
-      params: { limit: 20 },
-    },
-    {
-      enabled: !!roomId,
-      showError: false,
-      getNextPageParam: (lastPage) => {
-        return lastPage.pagination.hasMore
-          ? lastPage.pagination.nextCursor || undefined
-          : undefined;
-      },
-    },
-  );
-
-  // Send message mutation
-  const { mutate: sendMessage, isPending: isSending } = useAppPost<
-    SendMessageResponse,
-    SendMessageData
-  >(
-    apiRoutes.messages.sendMessage(roomId!),
-    {},
-    {
-      showError: true,
-      onSuccess: (data) => {
-        // Add new message to the list
-        queryClient.setQueryData<InfiniteData<GetMessagesResponse>>(
-          ["messages", roomId],
-          (old) => {
-            if (!old) return old;
-            return {
-              ...old,
-              pages: old.pages.map((page, index) =>
-                index === 0
-                  ? {
-                      ...page,
-                      messages: [...page.messages, data.message],
-                    }
-                  : page,
-              ),
-            };
-          },
-        );
-        setNewMessage("");
-      },
-    },
-  );
-
-  // Mark messages as read mutation
-  const { mutate: markAsRead } = useAppPost(
-    apiRoutes.messages.markAsRead(roomId!),
-    {},
-    {
-      showError: false,
-    },
-  );
-
   const room = roomData?.room;
   const otherUser = room?.participants.find((p) => p._id !== currentUser?._id);
 
-  // Flatten all messages from all pages
-  const allMessages: Message[] =
-    messagesData?.pages?.flatMap(
-      (page: GetMessagesResponse) => page.messages,
-    ) || [];
-
+  // ============================================================
+  // Initialize Socket Connection and Join Room
+  // ============================================================
   useEffect(() => {
-    if (!roomId) return;
+    if (!roomId || !currentUser) return;
+
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    // Connect to socket if not already connected
+    if (!socketService.isConnected()) {
+      socketService.connect(token);
+    }
+
+    // Join the specific room to receive messages
+    socketService.joinRoom(roomId);
+
+    // Request initial messages
+    socketService.getMessages(roomId, 20);
+
+    // ============================================================
+    // Listen for messages list (initial load)
+    // ============================================================
+    const handleMessagesList = (data: {
+      roomId: string;
+      messages: Message[];
+      pagination: { hasMore: boolean; nextCursor: string | null };
+    }) => {
+      if (data.roomId === roomId) {
+        setMessages(data.messages);
+        setIsLoadingMessages(false);
+      }
+    };
+
+    // ============================================================
+    // Listen for new messages in real-time
+    // Updates UI instantly when someone sends a message
+    // ============================================================
+    const handleNewMessage = (data: { roomId: string; message: Message }) => {
+      if (data.roomId === roomId) {
+        setMessages((prevMessages) => [...prevMessages, data.message]);
+
+        // Mark messages as read when viewing the conversation
+        socketService.markMessagesAsRead(roomId);
+      }
+    };
+
+    // ============================================================
+    // Listen for typing indicators
+    // Show when other user is typing
+    // ============================================================
+    const handleUserTyping = (data: {
+      roomId: string;
+      userId: string;
+      isTyping: boolean;
+    }) => {
+      if (data.roomId === roomId && data.userId !== currentUser._id) {
+        setTypingUserId(data.isTyping ? data.userId : null);
+      }
+    };
+
+    // Register event listeners
+    socketService.onMessagesList(handleMessagesList);
+    socketService.onNewMessage(handleNewMessage);
+    socketService.onUserTyping(handleUserTyping);
 
     // Mark messages as read when opening conversation
-    if (roomId) {
-      markAsRead({});
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId]);
+    socketService.markMessagesAsRead(roomId);
+
+    // Cleanup on unmount
+    return () => {
+      socketService.off("messagesList", handleMessagesList);
+      socketService.off("newMessage", handleNewMessage);
+      socketService.off("userTyping", handleUserTyping);
+      socketService.leaveRoom(roomId);
+    };
+  }, [roomId, currentUser, navigate]);
 
   // Start door animation after loading is complete
   useEffect(() => {
@@ -159,10 +147,10 @@ export function ConversationPage() {
     }
   }, [isLoadingRoom, isLoadingMessages, roomData]);
 
+  // Scroll to bottom when new messages arrive
   useEffect(() => {
-    // Scroll to bottom when new messages arrive
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [allMessages.length]);
+  }, [messages.length]);
 
   useEffect(() => {
     if (roomError) {
@@ -171,35 +159,48 @@ export function ConversationPage() {
     }
   }, [roomError, navigate]);
 
-  // Handle infinite scroll
-  useEffect(() => {
-    const container = messagesContainerRef.current;
-    if (!container) return;
-
-    const handleScroll = () => {
-      const { scrollTop } = container;
-      // If scrolled near the top (50px threshold)
-      if (scrollTop < 50 && hasNextPage && !isFetchingNextPage) {
-        const previousScrollHeight = container.scrollHeight;
-        fetchNextPage().then(() => {
-          // Maintain scroll position after loading more messages
-          requestAnimationFrame(() => {
-            const newScrollHeight = container.scrollHeight;
-            container.scrollTop = newScrollHeight - previousScrollHeight;
-          });
-        });
-      }
-    };
-
-    container.addEventListener("scroll", handleScroll);
-    return () => container.removeEventListener("scroll", handleScroll);
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
-
+  // ============================================================
+  // Handle Send Message via Socket
+  // ============================================================
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !currentUser || !roomId || isSending) return;
+    if (!newMessage.trim() || !currentUser || !roomId) return;
 
-    sendMessage({ content: newMessage.trim() });
+    // Send message via socket
+    socketService.sendMessage(roomId, newMessage.trim());
+    setNewMessage("");
+
+    // Stop typing indicator
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    socketService.sendTyping(roomId, false);
+  };
+
+  // ============================================================
+  // Handle Typing Indicator
+  // ============================================================
+  const handleMessageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessage(e.target.value);
+
+    if (!roomId) return;
+
+    // Send typing indicator
+    if (!isTyping) {
+      setIsTyping(true);
+      socketService.sendTyping(roomId, true);
+    }
+
+    // Clear previous timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Stop typing after 2 seconds of inactivity
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      socketService.sendTyping(roomId, false);
+    }, 2000);
   };
 
   if (!currentUser) {
@@ -372,14 +373,7 @@ export function ConversationPage() {
           className="flex-1 overflow-y-auto px-4 pt-6 pb-0"
         >
           <div className="max-w-4xl mx-auto space-y-4">
-            {isFetchingNextPage && (
-              <div className="text-center py-4">
-                <p className="text-sm text-muted-foreground">
-                  Loading more messages...
-                </p>
-              </div>
-            )}
-            {allMessages.map((message: Message, index: number) => (
+            {messages.map((message: Message, index: number) => (
               <motion.div
                 key={message._id}
                 initial={{ opacity: 0, y: 10 }}
@@ -430,6 +424,34 @@ export function ConversationPage() {
                 </div>
               </motion.div>
             ))}
+
+            {/* Typing Indicator */}
+            {typingUserId && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="flex justify-start"
+              >
+                <div className="max-w-[70%] rounded-2xl px-4 py-3 backdrop-blur-lg bg-card border border-border rounded-bl-sm">
+                  <div className="flex gap-1">
+                    <div
+                      className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"
+                      style={{ animationDelay: "0ms" }}
+                    />
+                    <div
+                      className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"
+                      style={{ animationDelay: "150ms" }}
+                    />
+                    <div
+                      className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"
+                      style={{ animationDelay: "300ms" }}
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             <div ref={messagesEndRef} />
           </div>
         </div>
@@ -449,13 +471,13 @@ export function ConversationPage() {
               type="text"
               placeholder="Type a message..."
               value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
+              onChange={handleMessageChange}
               className="flex-1 bg-background border-border rounded-full px-6"
             />
             <Button
               type="submit"
               size="icon"
-              disabled={isSending || !newMessage.trim()}
+              disabled={!newMessage.trim()}
               className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full w-12 h-12"
             >
               <Send className="w-5 h-5" />

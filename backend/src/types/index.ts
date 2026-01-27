@@ -44,7 +44,6 @@ export interface ILastMessage {
 
 export interface IRoom extends Document {
   id: string;
-  name: string;
   participants: IParticipant[];
   lastMessage?: ILastMessage;
   unreadCount: number;
@@ -60,4 +59,17 @@ export interface IMessage extends Document {
   timestamp: Date;
   read: boolean;
   type?: "system" | "user";
+}
+
+export interface INotification extends Document {
+  id: string;
+  userId: string;
+  type: "message" | "room_invite" | "system";
+  title: string;
+  message: string;
+  roomId?: string;
+  read: boolean;
+  metadata?: any;
+  createdAt: Date;
+  updatedAt: Date;
 }

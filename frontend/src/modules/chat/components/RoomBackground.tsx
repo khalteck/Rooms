@@ -1,5 +1,10 @@
 import { motion } from "motion/react";
 import { User } from "../../../types";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "../../../components/ui/avatar";
 
 interface RoomBackgroundProps {
   currentUser: User;
@@ -48,12 +53,22 @@ export function RoomBackground({
             }}
           >
             <div className="relative">
-              <div className="w-24 h-24 rounded-full border-4 border-primary/30 overflow-hidden bg-card">
-                <img
+              <div className="w-24 h-24 rounded-full border-4 border-primary/30 overflow-hidden bg-card flex justify-center">
+                <Avatar className="w-14 h-14 border-2 border-border group-hover:border-primary/30 transition-colors">
+                  <AvatarImage
+                    src={otherUser.avatar}
+                    alt={`${otherUser.firstName} ${otherUser.lastName}`}
+                  />
+                  <AvatarFallback>
+                    {otherUser.firstName[0]}
+                    {otherUser.lastName[0]}
+                  </AvatarFallback>
+                </Avatar>
+                {/* <img
                   src={otherUser.avatar}
-                  alt={otherUser.name}
+                  alt={otherUser.firstName + " " + otherUser.lastName}
                   className="w-full h-full object-cover"
-                />
+                /> */}
               </div>
               <motion.div
                 className="absolute -inset-4 rounded-full border border-primary/20"
@@ -128,12 +143,22 @@ export function RoomBackground({
             }}
           >
             <div className="relative">
-              <div className="w-24 h-24 rounded-full border-4 border-primary/30 overflow-hidden bg-card">
-                <img
+              <div className="w-24 h-24 rounded-full border-4 border-primary/30 overflow-hidden bg-card flex justify-center">
+                <Avatar className="w-14 h-14 border-2 border-border group-hover:border-primary/30 transition-colors">
+                  <AvatarImage
+                    src={currentUser.avatar}
+                    alt={`${currentUser.firstName} ${currentUser.lastName}`}
+                  />
+                  <AvatarFallback>
+                    {currentUser.firstName[0]}
+                    {currentUser.lastName[0]}
+                  </AvatarFallback>
+                </Avatar>
+                {/* <img
                   src={currentUser.avatar}
-                  alt={currentUser.name}
+                  alt={currentUser.firstName + " " + currentUser.lastName}
                   className="w-full h-full object-cover"
-                />
+                /> */}
               </div>
               <motion.div
                 className="absolute -inset-4 rounded-full border border-primary/20"

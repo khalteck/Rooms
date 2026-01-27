@@ -100,7 +100,7 @@ export function RoomCard({ room, currentUserId, onClick }: RoomCardProps) {
           <div className="flex-1 text-left min-w-0">
             <div className="flex items-center justify-between mb-1">
               <h3 className="truncate pr-2 group-hover:text-primary transition-colors">
-                {room.name}
+                {otherUser.firstName} {otherUser.lastName}
               </h3>
               {room.lastMessage && (
                 <span className="text-xs text-muted-foreground whitespace-nowrap">

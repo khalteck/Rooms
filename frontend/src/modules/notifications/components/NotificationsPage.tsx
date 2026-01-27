@@ -1,7 +1,7 @@
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { ArrowLeft, MessageSquare, UserPlus, Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
 import { Button } from "../../../components/ui/button";
 import {
   Avatar,
@@ -11,79 +11,131 @@ import {
 import { AnimatedBackground } from "../../../components/AnimatedBackground";
 import { EmptyNotificationsState } from "./EmptyNotificationsState";
 import { NotificationDetailModal } from "./NotificationDetailModal";
-
-interface Notification {
-  id: string;
-  type: "message" | "friend_request" | "system";
-  title: string;
-  message: string;
-  timestamp: Date;
-  avatar?: string;
-  read: boolean;
-}
-
-const notifications: Notification[] = [
-  {
-    id: "1",
-    type: "message",
-    title: "Sarah Chen",
-    message: "Sent you a message",
-    timestamp: new Date(Date.now() - 1000 * 60 * 5),
-    avatar:
-      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop",
-    read: false,
-  },
-  {
-    id: "2",
-    type: "message",
-    title: "Emily Park",
-    message: "Are we still on for tomorrow?",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60),
-    avatar:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
-    read: false,
-  },
-  {
-    id: "3",
-    type: "friend_request",
-    title: "James Wilson",
-    message: "Wants to connect with you",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3),
-    avatar:
-      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop",
-    read: true,
-  },
-  {
-    id: "4",
-    type: "system",
-    title: "Welcome to Rooms!",
-    message: "Start creating meaningful connections",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24),
-    read: true,
-  },
-];
+import { Notification as NotificationType } from "../../../types";
+import { socketService } from "../../../services/socketService";
+import { useAuthStore } from "../../../store";
 
 export function NotificationsPage() {
   const navigate = useNavigate();
-  const [selectedNotification, setSelectedNotification] =
-    useState<Notification | null>(null);
-  const [showDetailModal, setShowDetailModal] = useState(false);
+  const currentUser = useAuthStore((state) => state.user);
+  const token = useAuthStore((state) => state.token);
 
-  const handleNotificationClick = (notification: Notification) => {
+  const [selectedNotification, setSelectedNotification] =
+    useState<NotificationType | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationType[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // ============================================================
+  // Initialize Socket Connection and Request Notifications
+  // ============================================================
+  useEffect(() => {
+    if (!token || !currentUser) {
+      navigate("/login");
+      return;
+    }
+
+    // Connect to socket if not already connected
+    if (!socketService.isConnected()) {
+      socketService.connect(token);
+    }
+
+    // Request initial notifications list
+    socketService.getNotifications();
+
+    // ============================================================
+    // Listen for notifications list from server
+    // ============================================================
+    const handleNotificationsList = (data: {
+      notifications: NotificationType[];
+      unreadCount: number;
+    }) => {
+      setNotifications(data.notifications);
+      setUnreadCount(data.unreadCount);
+      setIsLoading(false);
+    };
+
+    // ============================================================
+    // Listen for new notifications in real-time
+    // Updates UI instantly when a new notification arrives
+    // ============================================================
+    const handleNewNotification = (data: {
+      notification: NotificationType;
+    }) => {
+      setNotifications((prevNotifications) => [
+        data.notification,
+        ...prevNotifications,
+      ]);
+      setUnreadCount((prev) => prev + 1);
+    };
+
+    // Register event listeners
+    socketService.onNotificationsList(handleNotificationsList);
+    socketService.onNewNotification(handleNewNotification);
+
+    // Cleanup on unmount
+    return () => {
+      socketService.off("notificationsList", handleNotificationsList);
+      socketService.off("newNotification", handleNewNotification);
+    };
+  }, [currentUser, navigate]);
+
+  const handleNotificationClick = (notification: NotificationType) => {
     setSelectedNotification(notification);
     setShowDetailModal(true);
+
+    // If notification is unread, mark it as read
+    // (You can add a REST API call here to mark as read)
+    if (!notification.read) {
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+      setNotifications((prevNotifications) =>
+        prevNotifications.map((n) =>
+          n._id === notification._id ? { ...n, read: true } : n,
+        ),
+      );
+    }
   };
 
   const getIcon = (type: string) => {
     switch (type) {
       case "message":
         return MessageSquare;
-      case "friend_request":
+      case "room_invite":
         return UserPlus;
       default:
         return Bell;
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="relative min-h-screen overflow-hidden">
+        <AnimatedBackground />
+        <div className="relative z-10 min-h-screen max-w-4xl mx-auto px-4 py-6 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-muted-foreground text-lg mb-2">
+              Loading notifications...
+            </p>
+            <div className="flex justify-center gap-2">
+              <div
+                className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                style={{ animationDelay: "0ms" }}
+              />
+              <div
+                className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                style={{ animationDelay: "150ms" }}
+              />
+              <div
+                className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                style={{ animationDelay: "300ms" }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -109,11 +161,12 @@ export function NotificationsPage() {
           <h1 className="text-3xl mb-2">Notifications</h1>
           <p className="text-muted-foreground">
             Stay updated with your conversations
+            {unreadCount > 0 && ` • ${unreadCount} unread`}
           </p>
         </motion.div>
 
         {/* Notifications List or Empty State */}
-        {[].length === 0 ? (
+        {notifications.length === 0 ? (
           <EmptyNotificationsState />
         ) : (
           <div className="space-y-3">
@@ -132,19 +185,9 @@ export function NotificationsPage() {
                   }`}
                 >
                   <div className="flex items-start gap-4">
-                    {notification.avatar ? (
-                      <Avatar className="w-12 h-12 border-2 border-border">
-                        <AvatarImage
-                          src={notification.avatar}
-                          alt={notification.title}
-                        />
-                        <AvatarFallback>{notification.title[0]}</AvatarFallback>
-                      </Avatar>
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Icon className="w-6 h-6 text-primary" />
-                      </div>
-                    )}
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Icon className="w-6 h-6 text-primary" />
+                    </div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between mb-1">
@@ -157,9 +200,9 @@ export function NotificationsPage() {
                         {notification.message}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(notification.timestamp).toLocaleDateString()}{" "}
+                        {new Date(notification.createdAt).toLocaleDateString()}{" "}
                         at{" "}
-                        {new Date(notification.timestamp).toLocaleTimeString(
+                        {new Date(notification.createdAt).toLocaleTimeString(
                           [],
                           {
                             hour: "2-digit",
@@ -178,7 +221,7 @@ export function NotificationsPage() {
 
       {/* Notification Detail Modal */}
       <NotificationDetailModal
-        notification={selectedNotification}
+        notification={selectedNotification as any}
         open={showDetailModal}
         onOpenChange={setShowDetailModal}
       />

@@ -15,46 +15,108 @@ import { RoomCard } from "./RoomCard";
 import { EmptyRoomsState } from "./EmptyRoomsState";
 import { CreateRoomModal } from "./CreateRoomModal";
 import { useAuthStore } from "../../../store";
-import { useAppQuery, useDebouncedValue } from "../../../hooks";
-import { apiRoutes } from "../../../helpers/apiRoutes";
+import { useDebouncedValue } from "../../../hooks";
 import { Room } from "../../../types";
 import { toast } from "sonner";
-
-interface GetRoomsResponse {
-  rooms: Room[];
-}
+import { socketService } from "../../../services/socketService";
 
 export function ChatListPage() {
   const navigate = useNavigate();
   const currentUser = useAuthStore((state) => state.user);
+  const token = useAuthStore((state) => state.token);
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateRoomModal, setShowCreateRoomModal] = useState(false);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const debouncedSearch = useDebouncedValue(searchQuery, 500);
 
-  const {
-    data: roomsData,
-    isLoading,
-    error,
-    refetch,
-  } = useAppQuery<GetRoomsResponse>(
-    ["rooms", debouncedSearch],
-    apiRoutes.rooms.getRooms,
-    {
-      params: debouncedSearch ? { search: debouncedSearch } : undefined,
-    },
-    {
-      showError: false,
-    },
-  );
-
+  // ============================================================
+  // Initialize Socket Connection
+  // Connect to socket when component mounts and user is authenticated
+  // ============================================================
   useEffect(() => {
-    if (error) {
-      toast.error("Failed to load rooms");
+    if (!token || !currentUser) {
+      navigate("/login");
+      return;
     }
-  }, [error]);
 
-  const rooms = roomsData?.rooms || [];
+    // Connect to socket if not already connected
+    if (!socketService.isConnected()) {
+      socketService.connect(token);
+    }
+
+    // Request initial rooms list
+    socketService.getRooms();
+
+    // ============================================================
+    // Listen for rooms list from server
+    // This is triggered after getRooms() request
+    // ============================================================
+    const handleRoomsList = (data: { rooms: Room[] }) => {
+      setRooms(data.rooms);
+      setIsLoading(false);
+    };
+
+    // ============================================================
+    // Listen for real-time room updates
+    // Triggered when last message changes, new message arrives, etc.
+    // ============================================================
+    const handleRoomUpdated = (data: { room: Room }) => {
+      setRooms((prevRooms) => {
+        const existingRoomIndex = prevRooms.findIndex(
+          (r) => r._id === data.room._id,
+        );
+
+        if (existingRoomIndex !== -1) {
+          // Update existing room
+          const updatedRooms = [...prevRooms];
+          updatedRooms[existingRoomIndex] = data.room;
+          // Sort by last message timestamp (most recent first)
+          return updatedRooms.sort((a, b) => {
+            const aTime = a.lastMessage?.timestamp
+              ? new Date(a.lastMessage.timestamp).getTime()
+              : 0;
+            const bTime = b.lastMessage?.timestamp
+              ? new Date(b.lastMessage.timestamp).getTime()
+              : 0;
+            return bTime - aTime;
+          });
+        } else {
+          // Add new room to the list
+          return [data.room, ...prevRooms];
+        }
+      });
+    };
+
+    // Register event listeners
+    socketService.onRoomsList(handleRoomsList);
+    socketService.onRoomUpdated(handleRoomUpdated);
+
+    // Cleanup on unmount
+    return () => {
+      socketService.off("roomsList", handleRoomsList);
+      socketService.off("roomUpdated", handleRoomUpdated);
+    };
+  }, [currentUser]);
+
+  // ============================================================
+  // Handle Search
+  // Re-fetch rooms when search query changes
+  // ============================================================
+  useEffect(() => {
+    if (socketService.isConnected()) {
+      setIsLoading(true);
+      socketService.getRooms(debouncedSearch);
+    }
+  }, [debouncedSearch]);
+
+  // ============================================================
+  // Refresh rooms list after creating a new room
+  // ============================================================
+  const handleRoomCreated = () => {
+    socketService.getRooms();
+  };
 
   if (!currentUser) {
     navigate("/login");
@@ -193,7 +255,7 @@ export function ChatListPage() {
       <CreateRoomModal
         open={showCreateRoomModal}
         onOpenChange={setShowCreateRoomModal}
-        onRoomCreated={() => refetch()}
+        onRoomCreated={handleRoomCreated}
       />
     </div>
   );

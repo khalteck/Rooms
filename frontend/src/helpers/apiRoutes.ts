@@ -21,4 +21,13 @@ export const apiRoutes = {
     sendMessage: (roomId: string) => `/rooms/chat/${roomId}/messages`,
     markAsRead: (roomId: string) => `/rooms/chat/${roomId}/messages/read`,
   },
+  notifications: {
+    getNotifications: "/notifications",
+    markAsRead: (notificationId: string) =>
+      `/notifications/${notificationId}/read`,
+    markAllAsRead: "/notifications/read-all",
+    deleteNotification: (notificationId: string) =>
+      `/notifications/${notificationId}`,
+    deleteAll: "/notifications",
+  },
 };

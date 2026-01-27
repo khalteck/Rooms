@@ -46,18 +46,14 @@ export const getRooms = asyncHandler(
 export const createRoom = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const userId = req.user?._id;
-    const { name, participantEmail } = req.body;
+    const { participantEmail } = req.body;
 
     if (!userId) {
       throw new ApiError(401, "Unauthorized", "User not authenticated");
     }
 
-    if (!name || !participantEmail) {
-      throw new ApiError(
-        400,
-        "Bad Request",
-        "Room name and participant email are required",
-      );
+    if (!participantEmail) {
+      throw new ApiError(400, "Bad Request", "Participant email is required");
     }
 
     // Find the participant by email
@@ -79,7 +75,6 @@ export const createRoom = asyncHandler(
     }
 
     const room = new Room({
-      name,
       participants: [
         {
           _id: currentUser._id.toString(),
@@ -101,7 +96,7 @@ export const createRoom = asyncHandler(
     await room.save();
 
     // create a system message indicating room creation
-    const systemMessage = `${currentUser.firstName} ${currentUser.lastName} created the room "${name}" with ${participant.firstName} ${participant.lastName}.`;
+    const systemMessage = `${currentUser.firstName} ${currentUser.lastName} created the room with ${participant.firstName} ${participant.lastName}.`;
 
     // You can implement a Message model and save this system message if needed
     const message = new Message({

@@ -34,11 +34,24 @@ export interface LastMessage {
 
 export interface Room {
   _id: string;
-  name: string;
   participants: User[];
   lastMessage?: LastMessage;
   unreadCount: number;
   createdAt: Date;
+}
+
+export interface Notification {
+  _id: string;
+  id: string;
+  userId: string;
+  type: "message" | "room_invite" | "system";
+  title: string;
+  message: string;
+  roomId?: string;
+  read: boolean;
+  metadata?: any;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export type Page =

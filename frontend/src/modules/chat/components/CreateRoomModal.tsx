@@ -23,7 +23,6 @@ interface CreateRoomModalProps {
 }
 
 interface CreateRoomData {
-  name: string;
   participantEmail: string;
 }
 
@@ -36,7 +35,6 @@ export function CreateRoomModal({
   onOpenChange,
   onRoomCreated,
 }: CreateRoomModalProps) {
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
 
   const { mutate: createRoom, isPending } = useAppPost<
@@ -48,8 +46,7 @@ export function CreateRoomModal({
     {
       showError: true,
       onSuccess: (data) => {
-        toast.success(`Room "${data.room.name}" created successfully`);
-        setName("");
+        toast.success(`Room with "${email}" created successfully`);
         setEmail("");
         onOpenChange(false);
         onRoomCreated?.();
@@ -59,11 +56,6 @@ export function CreateRoomModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!name.trim()) {
-      toast.error("Please enter a room name");
-      return;
-    }
 
     if (!email.trim()) {
       toast.error("Please enter an email address");
@@ -77,11 +69,10 @@ export function CreateRoomModal({
       return;
     }
 
-    createRoom({ name: name.trim(), participantEmail: email.trim() });
+    createRoom({ participantEmail: email.trim() });
   };
 
   const handleClose = () => {
-    setName("");
     setEmail("");
     onOpenChange(false);
   };
@@ -92,12 +83,12 @@ export function CreateRoomModal({
         <DialogHeader>
           <DialogTitle>Create New Room</DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Enter a room name and the email of the person you want to chat with.
+            Enter the email of the person you want to chat with.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <Label htmlFor="name">Room Name</Label>
               <div className="relative">
                 <MessageSquare className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -111,7 +102,7 @@ export function CreateRoomModal({
                   required
                 />
               </div>
-            </div>
+            </div> */}
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
               <div className="relative">

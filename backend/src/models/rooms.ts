@@ -23,7 +23,6 @@ const lastMessageSchema = new Schema(
 
 const roomSchema = new Schema<IRoom>(
   {
-    name: { type: String, required: true },
     participants: [participantSchema],
     lastMessage: { type: lastMessageSchema },
     unreadCount: { type: Number, default: 0 },
