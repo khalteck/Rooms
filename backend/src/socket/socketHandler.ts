@@ -21,15 +21,15 @@ export const initializeSocketIO = (io: Server) => {
   io.use(async (socket: AuthSocket, next) => {
     try {
       // Extract token from handshake auth or query parameters
-      const token = socket.handshake.auth.token || socket.handshake.query.token;
+      const rawToken =
+        socket.handshake.auth?.token ?? socket.handshake.query?.token;
 
-      if (!token) {
-        return next(new Error("Authentication error: No token provided"));
+      if (!rawToken || Array.isArray(rawToken)) {
+        return next(new Error("Authentication error: Invalid token"));
       }
 
-      // Verify and decode the JWT token
       const decoded = jwt.verify(
-        token as string,
+        rawToken,
         process.env.JWT_SECRET as string,
       ) as { id: string };
 
