@@ -21,8 +21,11 @@ class SocketService {
     this.token = token;
 
     // Get API URL from environment or use default
-    const SOCKET_URL =
-      (import.meta as any).env?.VITE_API_URL || "http://localhost:3000";
+    const baseURL = import.meta.env.PROD
+      ? import.meta.env.VITE_API_URL_PROD
+      : import.meta.env.VITE_API_URL_DEV;
+
+    const SOCKET_URL = baseURL.replace("/api/v1", "");
 
     // Create socket connection with authentication
     this.socket = io(SOCKET_URL, {
