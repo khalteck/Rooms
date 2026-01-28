@@ -122,7 +122,7 @@ export function OnboardingPage() {
                 <Button
                   variant="outline"
                   onClick={handleSkip}
-                  className="border-border"
+                  className="border-border hover:bg-card hover:text-white px-4"
                 >
                   Skip
                 </Button>

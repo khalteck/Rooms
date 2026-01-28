@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mail, MessageSquare } from "lucide-react";
+import { Mail } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -88,21 +88,6 @@ export function CreateRoomModal({
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
-            {/* <div className="space-y-2">
-              <Label htmlFor="name">Room Name</Label>
-              <div className="relative">
-                <MessageSquare className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="My Chat Room"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="pl-10 bg-background border-border"
-                  required
-                />
-              </div>
-            </div> */}
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
               <div className="relative">
@@ -120,13 +105,12 @@ export function CreateRoomModal({
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="mt-4 md:mt-0">
             <Button
-              type="button"
-              variant="outline"
               onClick={handleClose}
-              className="border-border"
               disabled={isPending}
+              variant="outline"
+              className="border-border hover:bg-card hover:text-white px-8 mb-5"
             >
               Cancel
             </Button>

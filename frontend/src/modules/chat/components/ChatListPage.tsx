@@ -15,10 +15,14 @@ import { RoomCard } from "./RoomCard";
 import { EmptyRoomsState } from "./EmptyRoomsState";
 import { CreateRoomModal } from "./CreateRoomModal";
 import { useAuthStore } from "../../../store";
-import { useDebouncedValue } from "../../../hooks";
+import { useAppQuery, useDebouncedValue } from "../../../hooks";
 import { Room } from "../../../types";
-import { toast } from "sonner";
 import { socketService } from "../../../services/socketService";
+import { apiRoutes } from "../../../helpers/apiRoutes.ts";
+
+interface GetRoomsResponse {
+  rooms: Room[];
+}
 
 export function ChatListPage() {
   const navigate = useNavigate();
@@ -30,6 +34,16 @@ export function ChatListPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   const debouncedSearch = useDebouncedValue(searchQuery, 500);
+
+  const { refetch } = useAppQuery<GetRoomsResponse>(
+    ["getRooms"],
+    apiRoutes.rooms.getRooms,
+    {},
+    {
+      enabled: false,
+      showError: false,
+    },
+  );
 
   // ============================================================
   // Initialize Socket Connection
@@ -98,7 +112,7 @@ export function ChatListPage() {
       socketService.off("roomsList", handleRoomsList);
       socketService.off("roomUpdated", handleRoomUpdated);
     };
-  }, [currentUser]);
+  }, [currentUser, token]);
 
   // ============================================================
   // Handle Search
@@ -114,8 +128,10 @@ export function ChatListPage() {
   // ============================================================
   // Refresh rooms list after creating a new room
   // ============================================================
-  const handleRoomCreated = () => {
+  const handleRoomCreated = async () => {
     socketService.getRooms();
+    const roomsData = await refetch();
+    setRooms(roomsData?.data?.rooms ?? []);
   };
 
   if (!currentUser) {

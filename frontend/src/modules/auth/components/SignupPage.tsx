@@ -52,7 +52,7 @@ export function SignupPage() {
     });
 
     if (res.user && res.token) {
-      toast.success(`Welcome, ${res.user.firstName}! 👋`);
+      toast.success(`Cheers ${res.user.firstName}, Welcome to Rooms! 🎉`);
       login(res.user, res.token);
       navigate("/app/onboarding");
     } else {

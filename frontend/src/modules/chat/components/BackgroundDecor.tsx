@@ -15,7 +15,7 @@ import {
 
 export function BackgroundDecor() {
   return (
-    <div className="absolute inset-0 z-[5] overflow-hidden pointer-events-none">
+    <div className="absolute inset-0 z-[5] overflow-hidden pointer-events-none opacity-50">
       {/* Top Left */}
       <motion.div
         animate={{ y: [0, -10, 0] }}

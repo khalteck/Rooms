@@ -32,7 +32,10 @@ export const getRooms = asyncHandler(
       ];
     }
 
-    const rooms = await Room.find(query);
+    // const rooms = await Room.find(query);
+    const rooms = await Room.find(query).sort({
+      "lastMessage.timestamp": -1,
+    });
 
     res.status(200).json({
       rooms,
